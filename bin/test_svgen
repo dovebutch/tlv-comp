@@ -1,0 +1,114 @@
+#!/usr/bin/perl
+# -*- mode: perl; indent-tabs-mode: nil; perl-indent-level: 2; cperl-indent-level: 2; -*-
+
+# Copyright (c) 2014, Intel Corporation
+# 
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+# 
+#     * Redistributions of source code must retain the above copyright notice,
+#       this list of conditions and the following disclaimer.
+#     * Redistributions in binary form must reproduce the above copyright
+#       notice, this list of conditions and the following disclaimer in the
+#       documentation and/or other materials provided with the distribution.
+#     * Neither the name of Intel Corporation nor the names of its contributors
+#       may be used to endorse or promote products derived from this software
+#       without specific prior written permission.
+# 
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+#
+# Regression test one .tlv file.
+# Args:
+#   - Regression test name.
+#   - .tlv file (from repo dir).  If perfect match for that in given regression, it will compile.
+#
+
+use strict;
+use warnings;
+
+use FindBin ();
+use lib "$FindBin::Bin";
+use tlv_repo_context;
+&Context::init(1, 0);
+
+
+
+#
+# Process command-line args
+#
+
+my $test_name = $ARGV[0];
+my $tlv_arg = $ARGV[1];  # Optional spec of single .tlv file.
+
+
+
+#
+# Get test attributes and iterate
+#
+
+my $test_info = &Context::get_test($test_name);
+my $path_env = $$test_info{path_env};
+my $tlv_files = $$test_info{tlv};
+my $pp_args = $$test_info{pp_args};
+my $exit_code = $$test_info{exit_code};
+my $cmd = '';
+
+my $src_path = $path_env ? "$ENV{$path_env}/" : '';
+foreach my $tlv (@$tlv_files) {
+  if (!$tlv_arg || ($tlv eq $tlv_arg)) {
+    my $args = shift @$pp_args;
+    if (!$args) {$args = '';} # needed?
+    my $exit = shift @$exit_code;
+    if (!$exit) {$exit = 0;}
+
+    (-e "$src_path$tlv") or die "Bug: Can't find $src_path$tlv.";
+
+
+    #
+    # Run SVGen.
+    #
+
+
+    &Context::require_dir("run/gen");
+    my $out_dir = "run/gen/$test_name";
+    &Context::require_dir($out_dir);
+
+    $cmd = "cp $src_path$tlv $out_dir";  # Good to capture this here so it can be compared w/ golden.
+    !system($cmd) or die "$cmd failed.";
+
+    # Use the copied source file in $out_dir.
+    $tlv =~ m|([^/]*)$|;
+    $tlv = "$out_dir/$1";
+
+    # Run M4.
+    if ($tlv =~ m|\.?m4$|) {
+      my $tlvm4 = $tlv;
+      $tlv = $`;
+
+      my $extra_args = $path_env ? "'-I $ENV{$path_env}'" : '';
+
+      # If this test has a path_env, pass its value as an include path.
+      $cmd = "./bin/run_m4 $extra_args $tlvm4 > $tlv";
+      !system($cmd) or die "$cmd failed.";
+    }
+
+    # Run svgen.
+    $cmd = "java -jar target/svgen.jar -i $tlv -o \"$out_dir/\"$args";
+    print "DEBUG: CMD: $cmd\n";
+    my $status = system($cmd) >> 8;
+    ($status <= $exit) or die "$cmd failed /w status $status > $exit.";
+  }
+}
+
+
+exit(0);

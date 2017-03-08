@@ -1,0 +1,205 @@
+#!/usr/bin/perl
+# -*- mode: perl; indent-tabs-mode: nil; perl-indent-level: 2; cperl-indent-level: 2; -*-
+
+
+# Copyright (c) 2014, Intel Corporation
+# 
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+# 
+#     * Redistributions of source code must retain the above copyright notice,
+#       this list of conditions and the following disclaimer.
+#     * Redistributions in binary form must reproduce the above copyright
+#       notice, this list of conditions and the following disclaimer in the
+#       documentation and/or other materials provided with the distribution.
+#     * Neither the name of Intel Corporation nor the names of its contributors
+#       may be used to endorse or promote products derived from this software
+#       without specific prior written permission.
+# 
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+
+## Pragmas
+use strict;
+use warnings;
+
+## Include Paths
+use Cwd;
+use File::Basename;
+use FindBin ();
+use lib "$FindBin::Bin";
+
+
+sub usage {
+  print STDOUT "Usage: $0 [-h] [-read-only] [-m4inc <m4-incl-path1> [-m4inc ...]] [-m4out <m4-out-file>] [-debug] [<tlv-args>] [-pass <passing-exit-status>] <tlv-[m4-]in-file> <sv-out-file>\n";
+}
+
+sub help {
+  print STDOUT "\nRuns m4 and TLV as required based on file-type line.\n";
+  print STDOUT "The file-type line is the first line of the file and should start with:\n";
+  print STDOUT "\t\"\\m4_TLV_version\" to utilize m4 prior to SVGen, or\n";
+  print STDOUT "\t\"\\TLV_version\" to utilize only SVGen, or\n";
+  print STDOUT "\tneither of the above for a pure SV file.\n\n";
+  &usage;
+  print STDOUT "\t-read-only: Generated files will be read-only.\n";
+  print STDOUT "\t-m4inc <path>: Provide one include path for m4 (in addition to standard TLV m4 include path.\n";
+  print STDOUT "\t-m4out <file>: Output file for TLV m4 run, if m4 is run.\n";
+  print STDOUT "\t-pass <status>: Determines the exit status of this script from the exit status of svgen.\n";
+  print STDOUT "\t                Svgen status at or below this value returns a zero status, otherwise the exit status from svgen is returned.\n";
+  print STDOUT "\t-debug: Debug enabled.  Produces debug output and .pre and .post versions of -m4out file.\n\n";
+  print STDOUT "Non-zero status indicates failure.  Failures from SVGen return that status.  Other failures return status of 100 (decimal).\n\n";
+}
+
+
+
+# BEGIN
+
+# Process command-line args.
+if($ARGV[$#ARGV] eq "-h") {
+  &help;
+  exit(0);
+}
+if($#ARGV < 1) {print STDOUT "Not enough arguments.\n"; &usage(); exit(100);}
+my @m4_args;
+my @tlv_args;
+my $debug = 0;
+my $sv_file = pop @ARGV;
+my $in_file = pop @ARGV;
+my $tlv_file = '';  # Till we find a -m4out arg.
+my $pass = 0;  # Return svgen exit status by default.
+my $read_only = 0;
+while (my $arg = shift) {
+  if ($arg eq "-debug") {
+    $debug = 1;
+  }
+  elsif ($arg eq "-read-only") {
+    $read_only = 1;
+  }
+  elsif ($arg eq "-m4inc") {
+    push @m4_args, "-I", shift;
+  }
+  elsif ($arg eq "-m4out") {
+    $tlv_file = shift;
+  }
+  elsif ($arg eq "-pass") {
+    $pass = shift;
+  }
+  else {
+    # Unrecognized arg.  Pass to TLV.
+    push @tlv_args, $arg;
+  }
+}
+
+
+# Determine whether the input file is an TLV M4 file, an TLV file, or an SV file.
+my $version_line = `/usr/bin/head -n 1 '$in_file'`;
+if ($?) {$! = '100'; die "Couldn't read $in_file'";}
+
+
+my $cmd;
+
+# Determine svgen output files.
+my $gen_file = $sv_file;
+$gen_file =~ s/(\.[^\.]*)$/_gen$1/;
+my $err_file = $sv_file;
+$err_file =~ s/(\.[^\.]*$)/_errorLog.txt/;
+my $out_files = "'$sv_file' '$gen_file' '$err_file'";
+
+# Make output files writable.  Failure to find files is okay, so no failure check.
+foreach my $file (($sv_file, $gen_file, $err_file)) {
+  if (-e $file) {
+    $cmd = "chmod +w -f $file";
+    print "DEBUG: Executing: $cmd\n" if ($debug);
+    if(system($cmd)) {$! = '100'; die "$cmd failed";}
+  }
+}
+
+
+if ($version_line =~ /m4_TLV_version/) {
+  if (!$tlv_file) {$! = '100'; die "-m4out argument required for $in_file.";}
+
+  $out_files .= "'$tlv_file'";
+
+  # Run M4 (for TLV)
+
+
+  # Note: Keep the commands here self-consistent, as well as the command in run_m4.
+
+  # The source file should go through M4.
+  if ($debug) {
+    # Debug mode produces intermediate files from and to m4_pre and m4_post.
+
+    $out_files .= "'$tlv_file.pre' '$tlv_file.post'";
+
+    # pre_m4
+    $cmd = "cat $FindBin::Bin/m4_config.m4 $in_file | $FindBin::Bin/pre_m4 > $tlv_file.pre";
+    print "DEBUG: Executing: $cmd\n";
+    if(system($cmd)) {$! = '100'; die "$cmd failed";}
+
+    # m4
+    $cmd = "/usr/bin/m4 --prefix-builtins -I $FindBin::Bin/../m4 @m4_args $tlv_file.pre > $tlv_file.post";
+    print "DEBUG: Executing: $cmd\n";
+    if(system($cmd)) {$! = '100'; die "$cmd failed";}
+
+    # post_m4
+    $cmd = "$FindBin::Bin/post_m4 < $tlv_file.post > $tlv_file";
+    print "DEBUG: Executing: $cmd\n";
+    if(system($cmd)) {$! = '100'; die "$cmd failed";}
+  }
+  else {
+    # Not debug mode.  Run m4_pre, m4, and m4_post as a monolithic command.
+    $cmd = "cat $FindBin::Bin/m4_config.m4 $in_file | $FindBin::Bin/pre_m4 | /usr/bin/m4 --prefix-builtins -I $FindBin::Bin/../m4 @m4_args | $FindBin::Bin/post_m4 > $tlv_file";
+    if(system($cmd)) {$! = '100'; die "$cmd failed";}
+  }
+
+} else {
+  $tlv_file = '';   # Undo the -m4out arg, as this is not an m4 source file.
+}
+
+if ($version_line =~ /TLV_version/) {
+  # (includes m4_TLV_version files)
+
+  # Run SVGen
+
+  # If not produced by m4, the TLV file is the input file.
+  $tlv_file or $tlv_file = $in_file;
+
+  $cmd = "/usr/bin/java -jar $FindBin::Bin/../target/svgen.jar -i '$tlv_file' -o $sv_file @tlv_args";
+  if ($debug) {print "DEBUG: Executing: $cmd\n"};
+  my $status = system($cmd);
+  if ($status) {
+    my $stat = $status >> 8;
+    print STDERR "SVGen command: $cmd\nreturned non-zero status ($stat).\n";
+    exit(($stat > $pass) ? $stat : 0);
+  }
+}
+else {
+
+
+  # Not recognized as an TLV file.  Just copy the file.
+
+  if ($debug) {print STDOUT "$in_file not recognized as an TLV file.\n"};
+  $cmd = "cp '$in_file' '$sv_file'";
+  if ($debug) {print "DEBUG: Executing: $cmd\n"};
+  if(system($cmd)) {$! = '100'; die "$cmd failed";}
+
+}
+
+
+# Make output files read-only.
+if ($read_only) {
+  $cmd = "chmod -w $out_files";
+  if(system($cmd)) {$! = '100'; die "$cmd failed";}
+}
+
+exit(0);

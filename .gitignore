@@ -1,0 +1,25 @@
+/target/
+/run/
+/eclipse_run/*
+*.class
+*~
+
+# CMake
+/build/
+/CMakeCache.txt
+/CMakeFiles/
+/Makefile
+/CTestTestfile.cmake
+/cmake_install.cmake
+/install_manifest.txt
+/Testing/
+/regression/CMakeFiles/
+/regression/CTestTestfile.cmake
+/regression/CMakeCache.txt
+/regression/Makefile
+/regression/Testing/
+/regression/cmake_install.cmake
+
+# Output in example dirs
+/DVEfiles
+/proprietary/examples/aes/hdl/DVEfiles

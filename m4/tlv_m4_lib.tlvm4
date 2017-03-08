@@ -1,0 +1,352 @@
+m4_divert(['-1'])
+// Included automatically for TLV m4 files.
+
+/*
+Copyright (c) 2014, Intel Corporation
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+    * Redistributions of source code must retain the above copyright notice,
+      this list of conditions and the following disclaimer.
+    * Redistributions in binary form must reproduce the above copyright
+      notice, this list of conditions and the following disclaimer in the
+      documentation and/or other materials provided with the distribution.
+    * Neither the name of Intel Corporation nor the names of its contributors
+      may be used to endorse or promote products derived from this software
+      without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+
+// .tlvm4 Library Files:
+// -------------------
+//
+// The 10nm build flow processes TLV files beginning with:
+//
+// \m4_TLV_version
+//
+// with M4.  Additionally, there is a pre_m4 and a post_m4 script that enable multiline macros to be
+// instantiated as:
+//
+//    m4+foo(args)
+//
+// and be fed to M4 as:
+//
+//    m4_foo("   ",['source_file.tlvm4'],<line-number>,['m4+foo(args)'],args)
+//
+//
+// Multiline macro definitions, follow this structure.
+//
+// m4_define_plus(['m4_example'], ['
+//
+// m4_pushdef(['m4_arg1'],    ['$5'])
+// m4_pushdef(['m4_arg2'],    ['$6'])
+//
+// '], m4___file__, m4___line__, ['
+//    line1
+//    line2
+// '],
+//
+// ['
+// m4_popdef(['m4_arg1'])
+// m4_popdef(['m4_arg2'])
+// '])
+
+
+
+
+// ===========================
+// Macros supporting m4+macros
+// ===========================
+
+
+// m4_TLV_version is the tag for TLV files that need m4 pre-processing.
+// This is substituted for TLV_version by this macro.
+m4_define(['m4_TLV_version'], ['TLV_version'])
+
+
+
+// A macro that expands to multiple lines of TLV content should begin with:
+//    \source <file>.tlvm4 <line number>
+// This macro produces this text (without indentation and new-lines) and is instantiated by m4_define_plus.
+// Eg:  m4_source(__file__, __line__)
+m4_define(['m4_source'], ['\source $1 $2'])
+
+
+
+// A really messy wrapper for m4_define for m4+macros.
+// Example:
+//   m4_define_plus(['m4_func'], ['
+//      m4 defines
+//   '], m4___file__, m4___line__, ['
+//      Body.
+//   '], ['
+//      m4 undefines
+//   '])
+// Expands as:
+//   m4_define(['m4_func'],['m4_source(['file.tlvm4'], 100)   /['']/ Instantiated from $']['2, $']['3 as: $']['4['']m4_divert(['-1'])
+//      m4 defines
+//   ['']m4_divert['']m4_prefix_lines(m4_open_quote()$']['1['']m4_close_quote(),
+//      Body.
+//   \['end_source'])m4_divert(['-1'])
+//      m4 undefines
+//   ['']m4_divert['']'])
+// So:
+//   m4_func(['   '], ['file.tlvm4'], 100, ['m4+func(...)'])
+// Expands as:
+//   m4_source(['file.tlvm4'], 100)   /['']/ Instantiated from src.tlvm4, 20 as: m4+func(...)['']m4_divert(['-1'])
+//      m4 defines
+//   ['']m4_divert['']m4_prefix_lines(['$1'],
+//      Body.
+//   \['end_source'])m4_divert(['-1'])
+//   
+//      m4 undefines
+//   ['']m4_divert['']
+// Which expands as:
+//      \source file.tlvm4 100   // Instantiated from src.tlvm4, 20 as: m4+func(...)
+//         Body.
+//      \end_source
+// (where Body. has parameters substituted)
+//
+m4_define(['m4_define_plus'],['m4_define(['$1'],['m4_source(['$3'], $4)   /['']/ Instantiated from $']['2, $']['3 as: $']['4['']m4_divert(['-1'])$2['']m4_divert['']m4_prefix_lines(m4_open_quote()$']['1['']m4_close_quote(),['$5\['end_source']'])m4_divert(['-1'])$6['']m4_divert['']'])'])
+
+
+
+// ===================
+// Useful w/i TLV Code
+// ===================
+
+// m4_alignment(alignment)
+// Provides an alignment value with '+'/'-' (eg: '+6'), given an alignment value.
+m4_define(['m4_alignment'], ['m4_dnl
+m4_ifelse(m4_eval($1 < 0), 1, $1, +$1)m4_dnl
+'])
+
+// m4_align(from_stage, to_stage)
+// Provides an alignment value with '+'/'-' (eg: '+6'), to consume from from_stage into to_stage.
+m4_define(['m4_align'], ['m4_dnl
+m4_alignment(m4_eval($1 - $2))m4_dnl
+'])
+
+
+
+// Define m4 constants for a range.  Instantiate from divert(['-1']) context.
+// m4_define_range(scope, SCOPE, 10, 1, 4) defines
+//   SCOPE_MAX = 9
+//   SCOPE_MIN = 1
+//   SCOPE_HIGH = 10
+//   SCOPE_LOW = 1
+//   SCOPE_CNT = 10
+//   SCOPE_WIDTH = 4
+//   SCOPE_RANGE = scope[9:0]
+m4_define(['m4_define_range'], ['
+   m4_define(['$2']_MAX, m4_eval($3 - 1))
+   m4_define(['$2']_MIN, $4)
+   m4_define(['$2']_HIGH, $3)
+   m4_define(['$2']_LOW, $4)
+   m4_define(['$2']_CNT, m4_eval($3 - $4))
+   m4_define(['$2']_WIDTH, $5)
+   m4_define(['$2']_RANGE, $1[m4_eval($3 - 1):$4])
+'])
+
+
+
+
+// ====================
+// Generic Logic Macros
+// ====================
+
+
+// Reduction macro.
+// Performs an operation across all instances of a hierarchy and provides the result outside that hierarchy.
+// m4+redux($sum[7:0], >hier, max, min, $addend, '0, +)
+m4_define_plus(['m4_redux'], ['
+
+m4_pushdef(['m4_redux_sig'],    ['$5'])
+m4_pushdef(['m4_hier'],         ['$6'])
+m4_pushdef(['m4_MAX'],          ['$7'])
+m4_pushdef(['m4_MIN'],          ['$8'])
+m4_pushdef(['m4_sig'],          ['$9'])
+m4_pushdef(['m4_init'],         ['$10'])
+m4_pushdef(['m4_op'],           ['$11'])
+
+'], m4___file__, m4___line__, ['
+   \always_comb
+      $m4_redux_sig = m4_init;
+      for (int i = m4_MIN; i <= m4_MAX; i++)
+         m4_redux_sig = m4_redux_sig m4_op m4_hier[i]m4_sig;
+'],
+
+['
+m4_popdef(['m4_redux_sig'])
+m4_popdef(['m4_hier'])
+m4_popdef(['m4_MAX'])
+m4_popdef(['m4_MIN'])
+m4_popdef(['m4_sig'])
+m4_popdef(['m4_init'])
+m4_popdef(['m4_op'])
+'])
+
+
+// Similar to m4+redux, but each element is conditioned.
+// Performs an operation across all instances of a hierarchy and provides the result outside that hierarchy.
+// m4+redux_cond($selected_value[7:0], >hier, max, min, $value, '0, |, $select)
+m4_define_plus(['m4_redux_cond'], ['
+
+m4_pushdef(['m4_redux_sig'],    ['$5'])
+m4_pushdef(['m4_hier'],         ['$6'])
+m4_pushdef(['m4_MAX'],          ['$7'])
+m4_pushdef(['m4_MIN'],          ['$8'])
+m4_pushdef(['m4_sig'],          ['$9'])
+m4_pushdef(['m4_init'],         ['$10'])
+m4_pushdef(['m4_op'],           ['$11'])
+m4_pushdef(['m4_cond_expr'],    ['$12'])
+
+'], m4___file__, m4___line__, ['
+   m4_hier[*]
+      m4_sig['']_cond = m4_cond_expr ? m4_sig : m4_init;
+   \always_comb
+      $m4_redux_sig = m4_init;
+      for (int i = m4_MIN; i <= m4_MAX; i++)
+         m4_redux_sig = m4_redux_sig m4_op m4_hier[i]m4_sig;
+'],
+
+['
+m4_popdef(['m4_redux_sig'])
+m4_popdef(['m4_hier'])
+m4_popdef(['m4_MAX'])
+m4_popdef(['m4_MIN'])
+m4_popdef(['m4_sig'])
+m4_popdef(['m4_init'])
+m4_popdef(['m4_op'])
+m4_popdef(['m4_cond_expr'])
+'])
+
+
+// Select across a hierarchy (MUX).  Works for $pipe_signals and $ANY.
+// Currently suboptimal for simulation.  Don't really need a macro
+// once TLV supports hierarchy indexing properly.
+// m4+select($selected_value[7:0], >hier, max, min, $value, $index)
+m4_define_plus(['m4_select'], ['
+
+m4_pushdef(['m4_redux_sig'],    ['$5'])
+m4_pushdef(['m4_hier'],         ['$6'])
+m4_pushdef(['m4_MAX'],          ['$7'])
+m4_pushdef(['m4_MIN'],          ['$8'])
+m4_pushdef(['m4_sig'],          ['$9'])
+m4_pushdef(['m4_index_sig'],    ['$10'])
+
+'], m4___file__, m4___line__, ['
+   // This is a suboptimal implementation for simulation.
+   // It does and/or reduction.  It would be better in simulation to simply index the desired value,
+   //   but this is not yet supported in TLV.
+   m4_hier[*]
+      m4_sig['']_select = m4_substr(m4_hier, 1) == m4_index_sig;
+   \always_comb
+      $m4_redux_sig = m4_init;
+      for (int i = m4_MIN; i <= m4_MAX; i++)
+         m4_redux_sig = m4_redux_sig | (m4_hier[i]m4_sig['']_select ? m4_hier[i]m4_sig : '0);
+'],
+
+['
+m4_popdef(['m4_redux_sig'])
+m4_popdef(['m4_hier'])
+m4_popdef(['m4_MAX'])
+m4_popdef(['m4_MIN'])
+m4_popdef(['m4_sig'])
+m4_popdef(['m4_index_sig'])
+'])
+
+
+// Variant of above with subhierarchy.
+// Select across a hierarchy (MUX).  Works for $pipe_signals and $ANY.
+// Currently suboptimal for simulation.  Don't really need a macro
+// once TLV supports hierarchy indexing properly.
+// m4+select($selected_value[7:0], >hier, max, min, $value, $index)
+m4_define_plus(['m4_select'], ['
+
+m4_pushdef(['m4_redux_sig'],    ['$5'])
+m4_pushdef(['m4_hier'],         ['$6'])
+m4_pushdef(['m4_MAX'],          ['$7'])
+m4_pushdef(['m4_MIN'],          ['$8'])
+m4_pushdef(['m4_sig'],          ['$9'])
+m4_pushdef(['m4_index_sig'],    ['$10'])
+
+'], m4___file__, m4___line__, ['
+   // This is a suboptimal implementation for simulation.
+   // It does and/or reduction.  It would be better in simulation to simply index the desired value,
+   //   but this is not yet supported in TLV.
+   m4_hier[*]
+      m4_sig['']_select = m4_substr(m4_hier, 1) == m4_index_sig;
+   \always_comb
+      $m4_redux_sig = m4_init;
+      for (int i = m4_MIN; i <= m4_MAX; i++)
+         m4_redux_sig = m4_redux_sig | (m4_hier[i]m4_sig['']_select ? m4_hier[i]m4_sig : '0);
+'],
+
+['
+m4_popdef(['m4_redux_sig'])
+m4_popdef(['m4_hier'])
+m4_popdef(['m4_MAX'])
+m4_popdef(['m4_MIN'])
+m4_popdef(['m4_sig'])
+m4_popdef(['m4_index_sig'])
+'])
+
+
+
+
+
+
+//========================
+// Test Bench Macros
+
+
+//
+// Random Number Generator
+//
+
+// These require /proprietary/common_src/lfsr_crc.vs to be `included.
+
+// Unique instance number for lfsr_crc module.
+m4_define(['m4_rand_inst_num'], 0)
+
+// Instantiate this in SV scope to enable use of m4_rand, below.
+// m4_use_rand(max_rand_width_min_32)
+// Eg: \SV
+//        m4_use_rand(256)
+m4_define(['m4_use_rand'], ['m4_dnl
+   bit [($1) - 1 : 0] M4_RAND_SEED;  assign M4_RAND_SEED = $1'h04c1_1db7;m4_dnl
+'])
+
+// Random number generator
+// Eg: m4_rand($Rand, 7, 0, >top|rs>$reset#+1, $valid)
+// Just putting something in place.  Probably needs improvement for better randomness.
+m4_define(['m4_rand'], ['m4_dnl
+m4_pushdef(['m4_rand_sig'], $1)m4_dnl
+m4_pushdef(['m4_max'], $2)m4_dnl
+m4_pushdef(['m4_min'], $3)m4_dnl
+m4_pushdef(['m4_reset'], $4)m4_dnl
+m4_pushdef(['m4_enable'], $5)m4_dnl
+lfsr_crc #(.POLY_WIDTH(m4_eval(m4_max+1 - m4_min)), .DATA_WIDTH(1)) rand_['']m4_rand_inst_num (.reset(m4_reset), .enable(m4_enable), .clk(Clk_clk_UH), .data(1'b0), .poly(M4_RAND_SEED[m4_max - m4_min : 0]), .seed('1), .state($m4_rand_sig[m4_max:m4_min]));  /['']/ Note: $ results in $$ and makes rand an assigned range.m4_dnl
+m4_define(['m4_rand_inst_num'], m4_eval(m4_rand_inst_num + 1))m4_dnl
+m4_popdef(['m4_rand_sig'])m4_dnl
+m4_popdef(['m4_max'])m4_dnl
+m4_popdef(['m4_min'])m4_dnl
+m4_popdef(['m4_reset'])m4_dnl
+m4_popdef(['m4_enable'])m4_dnl
+'])
+
+
+
+m4_divert['']m4_dnl

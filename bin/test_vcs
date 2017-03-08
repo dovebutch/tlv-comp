@@ -1,0 +1,181 @@
+#!/usr/bin/perl
+# -*- mode: perl; indent-tabs-mode: nil; perl-indent-level: 2; cperl-indent-level: 2; -*-
+#
+
+# Copyright (c) 2014, Intel Corporation
+# 
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+# 
+#     * Redistributions of source code must retain the above copyright notice,
+#       this list of conditions and the following disclaimer.
+#     * Redistributions in binary form must reproduce the above copyright
+#       notice, this list of conditions and the following disclaimer in the
+#       documentation and/or other materials provided with the distribution.
+#     * Neither the name of Intel Corporation nor the names of its contributors
+#       may be used to endorse or promote products derived from this software
+#       without specific prior written permission.
+# 
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+
+#
+# Regression test one .tlv file.
+#
+
+use strict;
+use warnings;
+
+use FindBin ();
+use lib "$FindBin::Bin";
+use tlv_repo_context;
+&Context::init(0);
+
+
+
+#
+# Process command-line args
+#
+
+my $test_name = $ARGV[0];
+$test_name or die("Test name required");
+
+
+
+#
+# Get test attributes and iterate
+#
+
+my $test_info = &Context::get_test($test_name);
+my $path_env = $$test_info{path_env};
+my $tlv_files = $$test_info{tlv};
+my $f_files = $$test_info{f};
+my $subdirs = $$test_info{subdir};
+my $dumps = $$test_info{dump};
+my $cmd = '';
+my $src = '';
+
+my $gen_dir = "run/gen/$test_name";
+&Context::require_dir("run/sim");
+
+# Find the age of the youngest library file.
+my $lib_files = \@Context::lib_files;
+my $youngest_lib_age = -1;
+foreach $src (@$lib_files) {
+  my $age = -M $src;
+  print "Checking lib file: $src w/ age $age.\n";
+  if (($age < $youngest_lib_age) || ($youngest_lib_age < 0)) {
+    $youngest_lib_age = $age;
+  }
+}
+
+# Make sure generated .vs files exist.
+my $src_root = $path_env ? "$ENV{$path_env}/" : '';
+my $run_svgen = 0;
+my @vs_files;
+foreach $src (@$tlv_files) {
+  # Find base file name.
+  ($src =~ m|/([^/]*)\.tlv(m4)?$|) or die "Failed to match .tlv(m4)? extension";
+  my $vs = $gen_dir . "/" . $1 . '.vs'; # .vs path/file.
+  push(@vs_files, $vs);
+  if (!-e $vs) {
+    $run_svgen = 1;
+    print "Info: Required file: $vs does not exist and needs to be built.\n";
+  } elsif ((-M $vs) >= (-M "$src_root$src")) {
+    $run_svgen = 1;
+    print "Info: Required file: $vs is older than source file $src_root$src and needs a rebuild.\n";
+  } elsif ((-M $vs) >= $youngest_lib_age) {
+    $run_svgen = 1;
+    print "Info: Required file: $vs is older than youngest library file and needs a rebuild.\n";
+  }
+}
+
+# If they don't, create them (should pre-processing be a build step, rather than regression?)
+if ($run_svgen) {
+  print "Running preprocessor to create these files.  Commands:\n";
+  $cmd = "bin/test_svgen $test_name";
+  print "\t$cmd\n";
+  !system($cmd) or die "$cmd failed";
+  # Make sure they exist now.
+  foreach my $vs (@vs_files) {
+    if (!-e $vs) {
+      print "Failed to produce the required file ($vs).  Bye.\n";
+      exit(1);
+    }
+  }
+}
+
+my @sim_dirs;
+foreach my $f (@$f_files) {
+  my $subdir = shift @$subdirs;
+  $f = "$src_root$f";
+  (-e $f) or die "Bug: Can't find $f.";
+
+
+  #
+  # Run VCS.
+  #
+
+  my $out_dir = "run/sim/$test_name";
+  &Context::require_dir($out_dir);
+
+  # $root is path to root relative to work dir for vcs command.
+  my $root = "../../..";
+  if ($subdir) {
+    $out_dir .= "/$subdir";
+    &Context::require_dir($out_dir);
+    $root .= "/..";
+  }
+  push(@sim_dirs, $out_dir);
+
+  # Run vcs in $out_dir dir.
+  chdir $out_dir or die "Couldn't chdir $out_dir";
+
+    $f = ($f =~ m|^/|) ? $f : "$root/$f";  # Update $f to be relative to work dir, rather than root.
+    # Souce dir comes from $f.
+    $src = $f;
+    $src =~ s|/[^/]+$|| or die "Couldn't extract path from $f";
+
+    $ENV{SRC} = "$src";
+    $ENV{GEN} = "$root/$gen_dir";
+    $ENV{TLV_REPO} = "$root";
+
+    $cmd = "\$VCS_HOME/bin/vcs +v2k -sverilog -debug_all +lint=all,noVCDE +warn=all -boundscheck -ntb_opts check=all -assert svaext +define+VCSSIM \"+incdir+$root/$gen_dir+$src+$root/verilog\" -file \"$f\"";
+    print "DEBUG: $cmd\n";
+    if (system($cmd)) {
+      die "VCS command failed: $cmd";
+    } else {
+      print "\n=======> VCS compilation successful for files in $f (relative to $out_dir).\n\n";
+    }
+
+
+    # Simulate
+    if (exists $$test_info{simv}) {
+      $cmd = ($$test_info{simv} == 1) ? "./simv" :
+                                        "tcsh -c './simv |& tee ./simv.log'; grep -q 'Success' ./simv.log";   # Need a command that will pass output to stdout, and report proper status.
+      print "DEBUG: Running simulation ($cmd)\n";
+      !system($cmd) or die "\nSimulation command failed. Command: '$cmd'";
+      print "\nSimulation successful.\n";
+    }
+
+
+  chdir $root or die "Couldn't chdir $root";
+}
+
+
+foreach my $dump (@$dumps) {
+  my $dir = shift @sim_dirs;
+  print "\nTo view $dir/$dump do:\n";
+  print "\ttcsh -c 'cd $Context::repo_dir/$dir; \$VCS_HOME/bin/dve -vpd $dump -dbdir simv.daidir' &\n";
+}
+exit(0);
