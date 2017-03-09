@@ -1,0 +1,9 @@
+This is a basic example used for testing Verilator/GTKwave.
+
+More information on the open source tools demonstrated in this example:
+
+  Verilator: https://www.veripool.org/wiki/verilator
+  GTKWave: http://gtkwave.sourceforge.net
+
+The example with set-up was taken from:
+  http://rattus-pubis.blogspot.no/2011/02/experimenting-with-verilator-counter.html
