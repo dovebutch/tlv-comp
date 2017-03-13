@@ -77,7 +77,7 @@ set(TLV_SRC
 
 #set(CMAKE_JAVA_JAR_ENTRY_POINT tlv/Main) # this only works for cmake 2.8.8
 set(CMAKE_JAVA_INCLUDE_PATH ${SVGEN_BUILD_DIR}/joptsimple/joptsimple.jar)
-set(CMAKE_JAVA_TARGET_OUTPUT_DIR {$SVGEN_TARGET_DIR})
+set(CMAKE_JAVA_TARGET_OUTPUT_DIR ${SVGEN_TARGET_DIR})
 add_jar(tlv ${TLV_SRC})
 
 add_dependencies(tlv joptsimple)
