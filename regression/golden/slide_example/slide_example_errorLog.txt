@@ -1,0 +1,85 @@
+WARNING(1) (UNUSED-SIG): File 'run/gen/slide_example/slide_example.tlv' Line 54 (char 11), while parsing:
+	+----------v--------------------
+	>         $foo = >top|pipe6>inst[0]$valid#0;
+	+----------^--------------------
+	Signal |pipe7$foo is assigned but never used.
+	To silence this message use "`BOGUS_USE($foo)
+
+
+WARNING(1) (UNUSED-SIG): File 'run/gen/slide_example/slide_example.tlv' Line 33 (char 11), while parsing:
+	+----------v--------------------
+	>         $blah = stuff;
+	+----------^--------------------
+	Signal |pipe6$blah is assigned but never used.
+	To silence this message use "`BOGUS_USE($blah)
+
+
+RECOV_ERROR(4) (UNASSIGNED-SIG): File 'run/gen/slide_example/slide_example.tlv' Line 46 (char 35), while parsing:
+	+----------------------------------v
+	>               $mem_addr[50:0] = $op_a + $raw_inst;
+	+----------------------------------^
+	Signal |pipe6>inst$op_a is used but never assigned.
+
+
+WARNING(1) (UNUSED-SIG): File 'run/gen/slide_example/slide_example.tlv' Line 48 (char 17), while parsing:
+	+----------------v--------------
+	>               $mem_addr_plus1[50:0] = $mem_addr | 51'b1;   // BUG: Enable for the clock producing $mem_addr@4L is not created.
+	+----------------^--------------
+	Signal |pipe6>inst$mem_addr_plus1 is assigned but never used.
+	To silence this message use "`BOGUS_USE($mem_addr_plus1)
+
+
+RECOV_ERROR(4) (UNASSIGNED-SIG): File 'run/gen/slide_example/slide_example.tlv' Line 51 (char 25), while parsing:
+	+------------------------v------
+	>               $test = $valid;
+	+------------------------^------
+	Signal |pipe6>inst>deep$valid is used but never assigned.
+
+
+WARNING(1) (UNUSED-SIG): File 'run/gen/slide_example/slide_example.tlv' Line 51 (char 17), while parsing:
+	+----------------v--------------
+	>               $test = $valid;
+	+----------------^--------------
+	Signal |pipe6>inst>deep$test is assigned but never used.
+	To silence this message use "`BOGUS_USE($test)
+
+
+RECOV_ERROR(4) (UNASSIGNED-SIG): File 'run/gen/slide_example/slide_example.tlv' Line 71 (char 19), while parsing:
+	+------------------v------------
+	>         $flow = $jump & >top|pipe3$add#-1;
+	+------------------^------------
+	Signal |pipe4$jump is used but never assigned.
+
+
+WARNING(1) (UNUSED-SIG): File 'run/gen/slide_example/slide_example.tlv' Line 71 (char 11), while parsing:
+	+----------v--------------------
+	>         $flow = $jump & >top|pipe3$add#-1;
+	+----------^--------------------
+	Signal |pipe4$flow is assigned but never used.
+	To silence this message use "`BOGUS_USE($flow)
+
+
+WARNING(1) (UNUSED-SIG): File 'run/gen/slide_example/slide_example.tlv' Line 68 (char 11), while parsing:
+	+----------v--------------------
+	>         $git = $call | $best;
+	+----------^--------------------
+	Signal |pipe3$git is assigned but never used.
+	To silence this message use "`BOGUS_USE($git)
+
+
+WARNING(1) (UNUSED-SIG): File 'run/gen/slide_example/slide_example.tlv' Line 64 (char 11), while parsing:
+	+----------v--------------------
+	>         $each = $call & $dist;
+	+----------^--------------------
+	Signal |pipe3$each is assigned but never used.
+	To silence this message use "`BOGUS_USE($each)
+
+
+WARNING(1) (UNUSED-SIG): File 'run/gen/slide_example/slide_example.tlv' Line 66 (char 11), while parsing:
+	+----------v--------------------
+	>         $flow = $dist;
+	+----------^--------------------
+	Signal |pipe3$flow is assigned but never used.
+	To silence this message use "`BOGUS_USE($flow)
+
+

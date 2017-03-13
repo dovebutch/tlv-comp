@@ -1,0 +1,29 @@
+WARNING(1) (UNUSED-SIG): File 'run/gen/users_guide1/users_guide1.tlv' Line 47 (char 17), while parsing:
+	+----------------v--------------
+	>               $write = $opcode == 5'b11000;
+	+----------------^--------------
+	Signal |pipe4>inst$write is assigned but never used.
+	To silence this message use "`BOGUS_USE($write)
+
+
+RECOV_ERROR(4) (UNASSIGNED-SIG): File 'run/gen/users_guide1/users_guide1.tlv' Line 49 (char 51), while parsing:
+	+--------------------------------------------------v
+	>               *arith_err_u104H[inst] = ($add && $overflow) || ($sub && $underflow);
+	+--------------------------------------------------^
+	Signal |pipe4>inst$overflow is used but never assigned.
+
+
+RECOV_ERROR(4) (UNASSIGNED-SIG): File 'run/gen/users_guide1/users_guide1.tlv' Line 49 (char 66), while parsing:
+	+-----------------------------------------------------------------v
+	>               *arith_err_u104H[inst] = ($add && $overflow) || ($sub && $underflow);
+	+-----------------------------------------------------------------^
+	Signal |pipe4>inst$sub is used but never assigned.
+
+
+RECOV_ERROR(4) (UNASSIGNED-SIG): File 'run/gen/users_guide1/users_guide1.tlv' Line 49 (char 74), while parsing:
+	+-------------------------------------------------------------------------v
+	>               *arith_err_u104H[inst] = ($add && $overflow) || ($sub && $underflow);
+	+-------------------------------------------------------------------------^
+	Signal |pipe4>inst$underflow is used but never assigned.
+
+
