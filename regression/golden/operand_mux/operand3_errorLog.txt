@@ -1,0 +1,16 @@
+RECOV_ERROR(4) (UNASSIGNED-SIG): File 'run/gen/operand_mux/operand3.tlv' Line 50 (char 34), while parsing:
+	+---------------------------------v
+	>            $rslt[63:0] = f_ALU($opcode, $op_a, $op_b);
+	|      //...
+	+---------------------------------^
+	Signal |pipe1$opcode is used but never assigned.
+
+
+RECOV_ERROR(4) (UNASSIGNED-SIG): File 'run/gen/operand_mux/operand3.tlv' Line 50 (char 50), while parsing:
+	+-------------------------------------------------v
+	>            $rslt[63:0] = f_ALU($opcode, $op_a, $op_b);
+	|      //...
+	+-------------------------------------------------^
+	Signal |pipe1$op_b is used but never assigned.
+
+

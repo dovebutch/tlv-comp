@@ -1,0 +1,38 @@
+RECOV_ERROR(4) (UNASSIGNED-SIG): File 'run/gen/beh_hier/beh_hier.tlv' Line 45 (char 40), while parsing:
+	+---------------------------------------v
+	>                  $rslt[63:0] = f_ALU($opcode, $op_a, $op_b);
+	+---------------------------------------^
+	Signal >core>inst|pipe1$opcode is used but never assigned.
+
+
+RECOV_ERROR(4) (UNASSIGNED-SIG): File 'run/gen/beh_hier/beh_hier.tlv' Line 39 (char 24), while parsing:
+	+-----------------------v-------
+	|                  $op_a[63:0] =
+	>                     ($op_a_src == IMM) ? $imm_data    :
+	|                     ($op_a_src == BYP) ? $rslt#+1     :
+	|                     ($op_a_src == REG) ? $reg_data#+2 :
+	|                     ($op_a_src == MEM) ? *mem_data_M320H :
+	|                                          64'b0;
+	+-----------------------^-------
+	Signal >core>inst|pipe1$op_a_src is used but never assigned.
+
+
+RECOV_ERROR(4) (UNASSIGNED-SIG): File 'run/gen/beh_hier/beh_hier.tlv' Line 45 (char 56), while parsing:
+	+-------------------------------------------------------v
+	>                  $rslt[63:0] = f_ALU($opcode, $op_a, $op_b);
+	+-------------------------------------------------------^
+	Signal >core>inst|pipe1$op_b is used but never assigned.
+
+
+RECOV_ERROR(4) (UNASSIGNED-SIG): File 'run/gen/beh_hier/beh_hier.tlv' Line 39 (char 44), while parsing:
+	+-------------------------------------------v
+	|                  $op_a[63:0] =
+	>                     ($op_a_src == IMM) ? $imm_data    :
+	|                     ($op_a_src == BYP) ? $rslt#+1     :
+	|                     ($op_a_src == REG) ? $reg_data#+2 :
+	|                     ($op_a_src == MEM) ? *mem_data_M320H :
+	|                                          64'b0;
+	+-------------------------------------------^
+	Signal >core>inst|pipe1$imm_data is used but never assigned.
+
+
