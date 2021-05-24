@@ -34,4 +34,7 @@ add_test(users_guide1       ${SVGEN_ROOT}/bin/test_svgen users_guide1)
 add_test(operand_mux        ${SVGEN_ROOT}/bin/test_svgen operand_mux)
 add_test(slide_example      ${SVGEN_ROOT}/bin/test_svgen slide_example)
 add_test(yuras_presentation ${SVGEN_ROOT}/bin/test_svgen yuras_presentation)
+#add_test(instr_pipe ${SVGEN_ROOT}/bin/test_svgen instr_pipe) # Disabled due to dependence on APLR_REPO
+#add_test(aplr ${SVGEN_ROOT}/bin/test_svgen aplr) # Disabled due to dependence on APLR_REPO
 #add_test(ring               ${SVGEN_ROOT}/bin/test_svgen test_vcs)
+#add_test(ring               ${SVGEN_ROOT}/bin/test_svgen ring) # Disabled due to usage of $ANY not supported on TLV 1a
