@@ -35,7 +35,7 @@ import java.util.Iterator;
 import java.util.TreeMap;
 import java.util.Vector;
 
-import javax.xml.ws.handler.MessageContext.Scope;
+//import javax.xml.ws.handler.MessageContext.Scope;
 
 import tlv.Main;
 import tlv.behavioral.range.BitRange;
