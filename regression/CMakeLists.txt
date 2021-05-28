@@ -38,3 +38,4 @@ add_test(yuras_presentation ${SVGEN_ROOT}/bin/test_svgen yuras_presentation)
 #add_test(aplr ${SVGEN_ROOT}/bin/test_svgen aplr) # Disabled due to dependence on APLR_REPO
 #add_test(ring               ${SVGEN_ROOT}/bin/test_svgen test_vcs)
 #add_test(ring               ${SVGEN_ROOT}/bin/test_svgen ring) # Disabled due to usage of $ANY not supported on TLV 1a
+add_test(fibo               ${SVGEN_ROOT}/bin/test_svgen fibo)

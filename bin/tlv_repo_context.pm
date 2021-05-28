@@ -101,7 +101,7 @@ my $expected_cmake = '/usr/bin/cmake';
                          f => [#"src/subswitch.f",
                                "src/instr_pipe.f"]
                          #simv => 2  # Self-checking.
-                        }
+                        },
 
 #  instr_pipe         => {path_env => 'APLR_REPO',   # An environment variable that must exist to use this test and is used as an include path for m4.
 #                         # TODO: Need to expose aplr.m4 as a source file for dependence analysis.
@@ -115,6 +115,10 @@ my $expected_cmake = '/usr/bin/cmake';
 #                               "src/instr_pipe.f"]
 #                         #simv => 2  # Self-checking.
 #                        }
+  fibo               => {
+                         tlv => ['examples/fibo/fibo.tlv'],
+                         exit_code => [0]
+                        }
 );
 
 
