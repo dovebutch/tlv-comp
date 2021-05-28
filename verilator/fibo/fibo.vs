@@ -11,6 +11,9 @@ module top(
    /*_|pipe_*/
       /*_@0_*/
          assign reset_PIPE_00H = reset;
-         assign val_PIPE_00H[15:0] = reset_PIPE_00H ? 1: val_PIPE_01H + val_PIPE_02H; endgenerate
+         assign val_PIPE_00H[15:0] = reset_PIPE_00H ? 1: val_PIPE_01H + val_PIPE_02H;
+
+         assign passed = cyc_cnt > 40;
+         assign failed = 1'b0; endgenerate
 //SV
 endmodule;

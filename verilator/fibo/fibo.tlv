@@ -12,6 +12,9 @@ module top(
       @0
 !        $reset = *reset;
          $val[15:0] = $reset ? 1: $val#+1 + $val#+2;
+
+!        *passed = *cyc_cnt > 40;
+!        *failed = 1'b0;
 \SV
 endmodule;
 
