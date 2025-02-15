@@ -487,7 +487,7 @@ public class ParseContext
         	String int_str = line_num_matcher.group();
 			try
 			{
-				ret = new Integer(int_str);
+				ret = Integer.valueOf(int_str);
 			}
 			catch (NumberFormatException e)
 			{
