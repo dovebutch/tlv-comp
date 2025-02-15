@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2004-2011 Paul R. Holser, Jr.
+ Copyright (c) 2004-2021 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -25,23 +25,22 @@
 
 package joptsimple;
 
-import java.util.Collection;
+import static java.util.Collections.*;
 
 /**
- * <p>Thrown when the option parser discovers an option that requires an argument,
- * but that argument is missing.</p>
+ * Thrown when the option parser discovers options that require an argument, but are missing an argument.
  *
  * @author <a href="mailto:pholser@alumni.rice.edu">Paul Holser</a>
  */
 class OptionMissingRequiredArgumentException extends OptionException {
     private static final long serialVersionUID = -1L;
 
-    OptionMissingRequiredArgumentException( Collection<String> options ) {
-        super( options );
+    OptionMissingRequiredArgumentException( OptionSpec<?> option ) {
+        super( singletonList( option ) );
     }
 
     @Override
-    public String getMessage() {
-        return "Option " + multipleOptionMessage() + " requires an argument";
+    Object[] messageArguments() {
+        return new Object[] { singleOptionString() };
     }
 }

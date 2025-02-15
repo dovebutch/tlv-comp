@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2004-2011 Paul R. Holser, Jr.
+ Copyright (c) 2004-2021 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -25,13 +25,13 @@
 
 package joptsimple;
 
-import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 import static java.util.Collections.*;
 
 /**
- * <p>A specification for an option that does not accept arguments.</p>
+ * A specification for an option that does not accept arguments.
  *
  * @author <a href="mailto:pholser@alumni.rice.edu">Paul Holser</a>
  */
@@ -40,35 +40,45 @@ class NoArgumentOptionSpec extends AbstractOptionSpec<Void> {
         this( singletonList( option ), "" );
     }
 
-    NoArgumentOptionSpec( Collection<String> options, String description ) {
-        super(options, description);
+    NoArgumentOptionSpec( List<String> options, String description ) {
+        super( options, description );
     }
 
     @Override
-    void handleOption( OptionParser parser, ArgumentList arguments,
-        OptionSet detectedOptions, String detectedArgument ) {
+    void handleOption( OptionParser parser, ArgumentList arguments, OptionSet detectedOptions,
+        String detectedArgument ) {
 
-        detectedOptions.add(this);
+        detectedOptions.add( this );
     }
 
+    @Override
     public boolean acceptsArguments() {
         return false;
     }
 
+    @Override
     public boolean requiresArgument() {
         return false;
     }
 
+    @Override
     public boolean isRequired() {
         return false;
     }
 
+    @Override
     public String argumentDescription() {
         return "";
     }
 
+    @Override
     public String argumentTypeIndicator() {
         return "";
+    }
+
+    @Override
+    public Optional<ValueConverter<?>> argumentConverter() {
+        return Optional.empty();
     }
 
     @Override
@@ -76,6 +86,7 @@ class NoArgumentOptionSpec extends AbstractOptionSpec<Void> {
         return null;
     }
 
+    @Override
     public List<Void> defaultValues() {
         return emptyList();
     }

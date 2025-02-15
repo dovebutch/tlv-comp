@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2004-2011 Paul R. Holser, Jr.
+ Copyright (c) 2004-2021 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -25,12 +25,14 @@
 
 package joptsimple.util;
 
+import java.util.Locale;
 import java.util.regex.Pattern;
+
+import static java.util.regex.Pattern.*;
+import static joptsimple.internal.Messages.message;
 
 import joptsimple.ValueConversionException;
 import joptsimple.ValueConverter;
-
-import static java.util.regex.Pattern.*;
 
 /**
  * Ensures that values entirely match a regular expression.
@@ -64,23 +66,33 @@ public class RegexMatcher implements ValueConverter<String> {
         return new RegexMatcher( pattern, 0 );
     }
 
-    /** {@inheritDoc} */
+    @Override
     public String convert( String value ) {
         if ( !pattern.matcher( value ).matches() ) {
-            throw new ValueConversionException(
-                "Value [" + value + "] did not match regex [" + pattern.pattern() + ']' );
+            raiseValueConversionFailure( value );
         }
 
         return value;
     }
 
-    /** {@inheritDoc} */
+    @Override
     public Class<String> valueType() {
         return String.class;
     }
 
-    /** {@inheritDoc} */
+    @Override
     public String valuePattern() {
         return pattern.pattern();
+    }
+
+    private void raiseValueConversionFailure( String value ) {
+        String message = message(
+            Locale.getDefault(),
+            "joptsimple.ExceptionMessages",
+            RegexMatcher.class,
+            "message",
+            value,
+            pattern.pattern() );
+        throw new ValueConversionException( message );
     }
 }

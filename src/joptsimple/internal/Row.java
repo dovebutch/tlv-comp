@@ -23,24 +23,33 @@
  WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-package joptsimple;
-
-import static java.util.Collections.*;
+package joptsimple.internal;
 
 /**
- * Thrown when the option parser encounters an unrecognized option.
- *
  * @author <a href="mailto:pholser@alumni.rice.edu">Paul Holser</a>
  */
-class UnrecognizedOptionException extends OptionException {
-    private static final long serialVersionUID = -1L;
+class Row {
+    final String option;
+    final String description;
 
-    UnrecognizedOptionException( String option ) {
-        super( singletonList( option ) );
+    Row( String option, String description ) {
+        this.option = option;
+        this.description = description;
     }
 
     @Override
-    Object[] messageArguments() {
-        return new Object[] { singleOptionString() };
+    public boolean equals( Object that ) {
+        if ( that == this )
+            return true;
+        if ( that == null || !getClass().equals( that.getClass() ) )
+            return false;
+
+        Row other = (Row) that;
+        return option.equals( other.option ) && description.equals( other.description );
+    }
+
+    @Override
+    public int hashCode() {
+        return option.hashCode() ^ description.hashCode();
     }
 }

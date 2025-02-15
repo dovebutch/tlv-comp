@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2004-2011 Paul R. Holser, Jr.
+ Copyright (c) 2004-2021 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -25,17 +25,43 @@
 
 package joptsimple.internal;
 
-/**
- * @author <a href="mailto:pholser@alumni.rice.edu">Paul Holser</a>
- */
-class ColumnWidthCalculator {
-    int calculate( int totalWidth, int numberOfColumns ) {
-        if ( numberOfColumns == 1 )
-            return totalWidth;
+import java.util.HashMap;
+import java.util.Map;
 
-        int remainder = totalWidth % numberOfColumns;
-        if ( remainder == numberOfColumns - 1 )
-            return totalWidth / numberOfColumns;
-        return totalWidth / numberOfColumns - 1;
+/**
+ * <p>An {@code OptionNameMap} which wraps and behaves like {@code HashMap}.</p>
+ */
+public class SimpleOptionNameMap<V> implements OptionNameMap<V> {
+    private final Map<String, V> map = new HashMap<>();
+
+    @Override
+    public boolean contains( String key ) {
+        return map.containsKey( key );
+    }
+
+    @Override
+    public V get( String key ) {
+        return map.get( key );
+    }
+
+    @Override
+    public void put( String key, V newValue ) {
+        map.put( key, newValue );
+    }
+
+    @Override
+    public void putAll( Iterable<String> keys, V newValue ) {
+        for ( String each : keys )
+            map.put( each, newValue );
+    }
+
+    @Override
+    public void remove( String key ) {
+        map.remove( key );
+    }
+
+    @Override
+    public Map<String, V> toJavaUtilMap() {
+        return new HashMap<>( map );
     }
 }

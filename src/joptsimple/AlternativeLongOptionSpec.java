@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2004-2011 Paul R. Holser, Jr.
+ Copyright (c) 2004-2021 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -25,26 +25,40 @@
 
 package joptsimple;
 
+import joptsimple.internal.Messages;
+
+import java.util.Locale;
+
 import static java.util.Collections.*;
 
 import static joptsimple.ParserRules.*;
 
 /**
- * Represents the <kbd>"-W"</kbd> form of long option specification.
+ * Represents the {@code "-W"} form of long option specification.
  *
  * @author <a href="mailto:pholser@alumni.rice.edu">Paul Holser</a>
  */
 class AlternativeLongOptionSpec extends ArgumentAcceptingOptionSpec<String> {
     AlternativeLongOptionSpec() {
-        super( singletonList( RESERVED_FOR_EXTENSIONS ), true, "Alternative form of long options" );
+        super( singletonList( RESERVED_FOR_EXTENSIONS ),
+            true,
+            Messages.message(
+                Locale.getDefault(),
+                "joptsimple.HelpFormatterMessages",
+                AlternativeLongOptionSpec.class,
+                "description" ) );
 
-        describedAs( "opt=value" );
+        describedAs( Messages.message(
+            Locale.getDefault(),
+            "joptsimple.HelpFormatterMessages",
+            AlternativeLongOptionSpec.class,
+            "arg.description" ) );
     }
 
     @Override
     protected void detectOptionArgument( OptionParser parser, ArgumentList arguments, OptionSet detectedOptions ) {
         if ( !arguments.hasMore() )
-            throw new OptionMissingRequiredArgumentException( options() );
+            throw new OptionMissingRequiredArgumentException( this );
 
         arguments.treatNextAsLongOption();
     }

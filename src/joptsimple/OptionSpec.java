@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2004-2011 Paul R. Holser, Jr.
+ Copyright (c) 2004-2021 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -25,8 +25,8 @@
 
 package joptsimple;
 
-import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Describes options that an option parser recognizes.
@@ -84,7 +84,34 @@ public interface OptionSpec<V> {
     V value( OptionSet detectedOptions );
 
     /**
+     * Gives the argument associated with the given option in the given set of detected options
+     * as an {@link Optional}.
+     *
+     * <p>Specifying a {@linkplain ArgumentAcceptingOptionSpec#defaultsTo(Object, Object[]) default argument value}
+     * for this option will cause this method to return that default value even if this option was not detected on the
+     * command line, or if this option can take an optional argument but did not have one on the command line.</p>
+     *
+     * @param detectedOptions the detected options to search in
+     * @return the argument of the this option as an {@code Optional}
+     * @throws OptionException if more than one argument was detected for the option
+     * @throws NullPointerException if {@code detectedOptions} is {@code null}
+     * @throws ClassCastException if the arguments of this option are not of the expected type
+     * @see OptionSet#valueOf(OptionSpec)
+     */
+    default Optional<V> valueOptional( OptionSet detectedOptions ) {
+        return Optional.ofNullable( value( detectedOptions ) );
+    }
+
+    /**
      * @return the string representations of this option
      */
-    Collection<String> options();
+    List<String> options();
+
+    /**
+     * Tells whether this option is designated as a "help" option. The presence of a "help" option on a command line
+     * means that missing "required" options will not cause parsing to fail.
+     *
+     * @return whether this option is designated as a "help" option
+     */
+    boolean isForHelp();
 }

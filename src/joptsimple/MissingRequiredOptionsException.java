@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2004-2011 Paul R. Holser, Jr.
+ Copyright (c) 2004-2021 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -23,24 +23,24 @@
  WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-package joptsimple.internal;
+package joptsimple;
+
+import java.util.List;
 
 /**
- * @author <a href="mailto:pholser@alumni.rice.edu">Paul Holser</a>
+ * Thrown when options marked as required are not specified on the command line.
+ *
+ * @author <a href="https://github.com/TC1">Emils Solmanis</a>
  */
-public final class Objects {
-    private Objects() {
-        throw new UnsupportedOperationException();
+class MissingRequiredOptionsException extends OptionException {
+    private static final long serialVersionUID = -1L;
+
+    protected MissingRequiredOptionsException( List<? extends OptionSpec<?>> missingRequiredOptions ) {
+        super( missingRequiredOptions );
     }
 
-    /**
-     * Rejects {@code null} references.
-     *
-     * @param target reference to check
-     * @throws NullPointerException if {@code target} is {@code null}
-     */
-    public static void ensureNotNull( Object target ) {
-        if ( target == null )
-            throw new NullPointerException();
+    @Override
+    Object[] messageArguments() {
+        return new Object[] { multipleOptionString() };
     }
 }

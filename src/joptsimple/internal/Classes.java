@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2004-2011 Paul R. Holser, Jr.
+ Copyright (c) 2004-2021 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -32,7 +32,7 @@ import java.util.Map;
  * @author <a href="mailto:pholser@alumni.rice.edu">Paul Holser</a>
  */
 public final class Classes {
-    private static final Map<Class<?>, Class<?>> WRAPPERS = new HashMap<Class<?>, Class<?>>( 13 );
+    private static final Map<Class<?>, Class<?>> WRAPPERS = new HashMap<>( 13 );
 
     static {
         WRAPPERS.put( boolean.class, Boolean.class );
@@ -68,6 +68,7 @@ public final class Classes {
      * @param clazz the class to check
      * @return primitive wrapper type if {@code clazz} is primitive, otherwise {@code clazz}
      */
+    @SuppressWarnings( "unchecked" )
     public static <T> Class<T> wrapperOf( Class<T> clazz ) {
         return clazz.isPrimitive() ? (Class<T>) WRAPPERS.get( clazz ) : clazz;
     }

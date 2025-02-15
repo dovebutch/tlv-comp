@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2004-2011 Paul R. Holser, Jr.
+ Copyright (c) 2004-2021 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -26,14 +26,13 @@
 package joptsimple;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.StringTokenizer;
 
-import joptsimple.internal.ReflectionException;
-
 import static java.util.Collections.*;
-import static joptsimple.internal.Objects.*;
+import static java.util.Objects.*;
+
 import static joptsimple.internal.Reflection.*;
 import static joptsimple.internal.Strings.*;
 
@@ -41,7 +40,7 @@ import static joptsimple.internal.Strings.*;
  * <p>Specification of an option that accepts an argument.</p>
  *
  * <p>Instances are returned from {@link OptionSpecBuilder} methods to allow the formation of parser directives as
- * sentences in a "fluent interface" language.  For example:</p>
+ * sentences in a "fluent interface" language. For example:</p>
  *
  * <pre>
  *   <code>
@@ -58,13 +57,14 @@ import static joptsimple.internal.Strings.*;
  */
 public abstract class ArgumentAcceptingOptionSpec<V> extends AbstractOptionSpec<V> {
     private static final char NIL_VALUE_SEPARATOR = '\u0000';
-    
-    private boolean optionRequired;
+
     private final boolean argumentRequired;
+    private final List<V> defaultValues = new ArrayList<>();
+
+    private boolean optionRequired;
     private ValueConverter<V> converter;
     private String argumentDescription = "";
     private String valueSeparator = String.valueOf( NIL_VALUE_SEPARATOR );
-    private final List<V> defaultValues = new ArrayList<V>();
 
     ArgumentAcceptingOptionSpec( String option, boolean argumentRequired ) {
         super( option );
@@ -72,7 +72,7 @@ public abstract class ArgumentAcceptingOptionSpec<V> extends AbstractOptionSpec<
         this.argumentRequired = argumentRequired;
     }
 
-    ArgumentAcceptingOptionSpec( Collection<String> options, boolean argumentRequired, String description ) {
+    ArgumentAcceptingOptionSpec( List<String> options, boolean argumentRequired, String description ) {
         super( options, description );
 
         this.argumentRequired = argumentRequired;
@@ -95,7 +95,7 @@ public abstract class ArgumentAcceptingOptionSpec<V> extends AbstractOptionSpec<
      * before a one-{@link String}-arg constructor would.</p>
      *
      * <p>Invoking this method will trump any previous calls to this method or to
-     * {@link #withValuesConvertedBy(ValueConverter)}.
+     * {@link #withValuesConvertedBy(ValueConverter)}.</p>
      *
      * @param <T> represents the runtime class of the desired option argument type
      * @param argumentType desired type of arguments to this spec's option
@@ -153,7 +153,7 @@ public abstract class ArgumentAcceptingOptionSpec<V> extends AbstractOptionSpec<
      *   </code>
      * </pre>
      *
-     * <p>Then {@code options.valuesOf( "z" )} would yield the list {@code [foo, bar, baz, fizz, buzz]}.</p>
+     * <p>Then <code>options.valuesOf( "z" )</code> would yield the list {@code [foo, bar, baz, fizz, buzz]}.</p>
      *
      * <p>You cannot use Unicode U+0000 as the separator.</p>
      *
@@ -170,6 +170,35 @@ public abstract class ArgumentAcceptingOptionSpec<V> extends AbstractOptionSpec<
     }
 
     /**
+     * <p>Specifies a value separator for the argument of the option that this spec represents.  This allows a single
+     * option argument to represent multiple values for the option.  For example:</p>
+     *
+     * <pre>
+     *   <code>
+     *   parser.accepts( "z" ).withRequiredArg()
+     *       .<strong>withValuesSeparatedBy( ":::" )</strong>;
+     *   OptionSet options = parser.parse( new String[] { "-z", "foo:::bar:::baz", "-z",
+     *       "fizz", "-z", "buzz" } );
+     *   </code>
+     * </pre>
+     *
+     * <p>Then <code>options.valuesOf( "z" )</code> would yield the list {@code [foo, bar, baz, fizz, buzz]}.</p>
+     *
+     * <p>You cannot use Unicode U+0000 in the separator.</p>
+     *
+     * @param separator a string separator
+     * @return self, so that the caller can add clauses to the fluent interface sentence
+     * @throws IllegalArgumentException if the separator contains Unicode U+0000
+     */
+    public final ArgumentAcceptingOptionSpec<V> withValuesSeparatedBy( String separator ) {
+        if ( separator.indexOf( NIL_VALUE_SEPARATOR ) != -1 )
+            throw new IllegalArgumentException( "cannot use U+0000 in separator" );
+
+        valueSeparator = separator;
+        return this;
+    }
+
+    /**
      * Specifies a set of default values for the argument of the option that this spec represents.
      *
      * @param value the first in the set of default argument values for this spec's option
@@ -178,7 +207,8 @@ public abstract class ArgumentAcceptingOptionSpec<V> extends AbstractOptionSpec<
      * @throws NullPointerException if {@code value}, {@code values}, or any elements of {@code values} are
      * {@code null}
      */
-    public ArgumentAcceptingOptionSpec<V> defaultsTo( V value, V... values ) {
+    @SafeVarargs
+    public final ArgumentAcceptingOptionSpec<V> defaultsTo( V value, V... values ) {
         addDefaultValue( value );
         defaultsTo( values );
 
@@ -203,20 +233,21 @@ public abstract class ArgumentAcceptingOptionSpec<V> extends AbstractOptionSpec<
      * Marks this option as required. An {@link OptionException} will be thrown when
      * {@link OptionParser#parse(java.lang.String...)} is called, if an option is marked as required and not specified
      * on the command line.
-     * 
+     *
      * @return self, so that the caller can add clauses to the fluent interface sentence
-     */ 
+     */
     public ArgumentAcceptingOptionSpec<V> required() {
         optionRequired = true;
         return this;
     }
-    
+
+    @Override
     public boolean isRequired() {
         return optionRequired;
     }
 
     private void addDefaultValue( V value ) {
-        ensureNotNull( value );
+        requireNonNull( value );
         defaultValues.add( value );
     }
 
@@ -224,7 +255,7 @@ public abstract class ArgumentAcceptingOptionSpec<V> extends AbstractOptionSpec<
     final void handleOption( OptionParser parser, ArgumentList arguments, OptionSet detectedOptions,
         String detectedArgument ) {
 
-        if ( isNullOrEmpty( detectedArgument ) )
+        if ( detectedArgument == null )
             detectOptionArgument( parser, arguments, detectedOptions );
         else
             addArguments( detectedOptions, detectedArgument );
@@ -243,21 +274,9 @@ public abstract class ArgumentAcceptingOptionSpec<V> extends AbstractOptionSpec<
     protected abstract void detectOptionArgument( OptionParser parser, ArgumentList arguments,
         OptionSet detectedOptions );
 
-    @SuppressWarnings( "unchecked" )
     @Override
     protected final V convert( String argument ) {
-        if ( converter == null )
-            return (V) argument;
-
-        try {
-            return converter.convert( argument );
-        }
-        catch ( ReflectionException ex ) {
-            throw new OptionArgumentConversionException( options(), argument, converter.valueType(), ex );
-        }
-        catch ( ValueConversionException ex ) {
-            throw new OptionArgumentConversionException( options(), argument, converter.valueType(), ex );
-        }
+        return convertWith( converter, argument );
     }
 
     protected boolean canConvertArgument( String argument ) {
@@ -267,8 +286,7 @@ public abstract class ArgumentAcceptingOptionSpec<V> extends AbstractOptionSpec<
             while ( lexer.hasMoreTokens() )
                 convert( lexer.nextToken() );
             return true;
-        }
-        catch ( OptionException ignored ) {
+        } catch ( OptionException ignored ) {
             return false;
         }
     }
@@ -277,28 +295,34 @@ public abstract class ArgumentAcceptingOptionSpec<V> extends AbstractOptionSpec<
         return converter != null && Number.class.isAssignableFrom( converter.valueType() );
     }
 
+    @Override
     public boolean acceptsArguments() {
         return true;
     }
 
+    @Override
     public boolean requiresArgument() {
         return argumentRequired;
     }
 
+    @Override
     public String argumentDescription() {
         return argumentDescription;
     }
 
+    @Override
     public String argumentTypeIndicator() {
-        if ( converter == null )
-            return null;
-
-        String pattern = converter.valuePattern();
-        return pattern == null ? converter.valueType().getName() : pattern;
+        return argumentTypeIndicatorFrom( converter );
     }
 
+    @Override
     public List<V> defaultValues() {
         return unmodifiableList( defaultValues );
+    }
+
+    @Override
+    public Optional<ValueConverter<?>> argumentConverter() {
+        return Optional.ofNullable( converter );
     }
 
     @Override

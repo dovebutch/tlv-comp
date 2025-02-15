@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2004-2011 Paul R. Holser, Jr.
+ Copyright (c) 2004-2021 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -42,11 +42,24 @@ public interface ValueConverter<V> {
     V convert( String value );
 
     /**
+     * <p>Reverts a value to a string representation.</p>
+     *
+     * <p>It is not strictly required that {@code revert(convert(v)).equals(v)},
+     * but it is recommended.</p>
+     *
+     * @param value a value
+     * @return a string representation of the value
+     */
+    default String revert( V value ) {
+        return String.valueOf( value );
+    }
+
+    /**
      * Gives the class of the type of values this converter converts to.
      *
      * @return the target class for conversion
      */
-    Class<V> valueType();
+    Class<? extends V> valueType();
 
     /**
      * Gives a string that describes the pattern of the values this converter expects, if any.  For example, a date

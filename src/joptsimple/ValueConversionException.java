@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2004-2011 Paul R. Holser, Jr.
+ Copyright (c) 2004-2021 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -26,8 +26,7 @@
 package joptsimple;
 
 /**
- * Thrown by {@link ValueConverter}s when problems occur in converting string values to
- * other Java types.
+ * Thrown by {@link ValueConverter}s when problems occur in converting string values to other Java types.
  *
  * @author <a href="mailto:pholser@alumni.rice.edu">Paul Holser</a>
  */

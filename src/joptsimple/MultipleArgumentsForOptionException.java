@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2004-2011 Paul R. Holser, Jr.
+ Copyright (c) 2004-2021 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -25,23 +25,22 @@
 
 package joptsimple;
 
-import java.util.Collection;
+import static java.util.Collections.*;
 
 /**
- * <p>Thrown when asking an {@link OptionSet} for a single argument of an option when
- * many have been specified.</p>
+ * Thrown when asking an {@link OptionSet} for a single argument of an option when many have been specified.
  *
  * @author <a href="mailto:pholser@alumni.rice.edu">Paul Holser</a>
  */
 class MultipleArgumentsForOptionException extends OptionException {
     private static final long serialVersionUID = -1L;
 
-    MultipleArgumentsForOptionException( Collection<String> options ) {
-        super( options );
+    MultipleArgumentsForOptionException( OptionSpec<?> options ) {
+        super( singleton( options ) );
     }
 
     @Override
-    public String getMessage() {
-        return "Found multiple arguments for option " + multipleOptionMessage() + ", but you asked for only one";
+    Object[] messageArguments() {
+        return new Object[] { singleOptionString() };
     }
 }
