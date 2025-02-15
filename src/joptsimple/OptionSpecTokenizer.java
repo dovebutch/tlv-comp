@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2004-2011 Paul R. Holser, Jr.
+ Copyright (c) 2004-2021 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -30,12 +30,13 @@ import java.util.NoSuchElementException;
 import static joptsimple.ParserRules.*;
 
 /**
- * <p>Tokenizes a short option specification string.</p>
+ * Tokenizes a short option specification string.
  *
  * @author <a href="mailto:pholser@alumni.rice.edu">Paul Holser</a>
  */
 class OptionSpecTokenizer {
     private static final char POSIXLY_CORRECT_MARKER = '+';
+    private static final char HELP_MARKER = '*';
 
     private String specification;
     private int index;
@@ -69,11 +70,18 @@ class OptionSpecTokenizer {
 
         ensureLegalOption( optionCandidate );
 
-        if ( hasMore() )
-            spec = specification.charAt( index ) == ':'
+        if ( hasMore() ) {
+            boolean forHelp = false;
+            if ( specification.charAt( index ) == HELP_MARKER ) {
+                forHelp = true;
+                ++index;
+            }
+            spec = hasMore() && specification.charAt( index ) == ':'
                 ? handleArgumentAcceptingOption( optionCandidate )
                 : new NoArgumentOptionSpec( optionCandidate );
-        else
+            if ( forHelp )
+                spec.forHelp();
+        } else
             spec = new NoArgumentOptionSpec( optionCandidate );
 
         return spec;

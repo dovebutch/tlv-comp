@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2004-2011 Paul R. Holser, Jr.
+ Copyright (c) 2004-2021 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -25,8 +25,8 @@
 
 package joptsimple;
 
-import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Describes options that an option parser recognizes, in ways that might be useful to {@linkplain HelpFormatter
@@ -40,7 +40,7 @@ public interface OptionDescriptor {
      *
      * @return synonymous options
      */
-    Collection<String> options();
+    List<String> options();
 
     /**
      * Description of this option's purpose.
@@ -91,4 +91,19 @@ public interface OptionDescriptor {
      * @return a description for the option's argument type
      */
     String argumentTypeIndicator();
+
+    /**
+     * Tells whether this object represents the non-option arguments of a command line.
+     *
+     * @return {@code true} if this represents non-option arguments
+     */
+    boolean representsNonOptions();
+
+    /**
+     * Gives an object that can convert raw string values into objects of the
+     * type of this option's argument
+     *
+     * @return a converter
+     */
+    Optional<ValueConverter<?>> argumentConverter();
 }

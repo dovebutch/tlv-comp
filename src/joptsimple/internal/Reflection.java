@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2004-2011 Paul R. Holser, Jr.
+ Copyright (c) 2004-2021 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -28,6 +28,7 @@ package joptsimple.internal;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+
 import static java.lang.reflect.Modifier.*;
 
 import joptsimple.ValueConverter;
@@ -35,7 +36,7 @@ import joptsimple.ValueConverter;
 import static joptsimple.internal.Classes.*;
 
 /**
- * <p>Helper methods for reflection.</p>
+ * Helper methods for reflection.
  *
  * @author <a href="mailto:pholser@alumni.rice.edu">Paul Holser</a>
  */
@@ -67,22 +68,20 @@ public final class Reflection {
 
     private static <V> ValueConverter<V> valueOfConverter( Class<V> clazz ) {
         try {
-            Method valueOf = clazz.getDeclaredMethod( "valueOf", String.class );
+            Method valueOf = clazz.getMethod( "valueOf", String.class );
             if ( meetsConverterRequirements( valueOf, clazz ) )
-                return new MethodInvokingValueConverter<V>( valueOf, clazz );
+                return new MethodInvokingValueConverter<>( valueOf, clazz );
 
             return null;
-        }
-        catch ( NoSuchMethodException ignored ) {
+        } catch ( NoSuchMethodException ignored ) {
             return null;
         }
     }
 
     private static <V> ValueConverter<V> constructorConverter( Class<V> clazz ) {
         try {
-            return new ConstructorInvokingValueConverter<V>( clazz.getConstructor( String.class ) );
-        }
-        catch ( NoSuchMethodException ignored ) {
+            return new ConstructorInvokingValueConverter<>( clazz.getConstructor( String.class ) );
+        } catch ( NoSuchMethodException ignored ) {
             return null;
         }
     }
@@ -99,8 +98,7 @@ public final class Reflection {
     public static <T> T instantiate( Constructor<T> constructor, Object... args ) {
         try {
             return constructor.newInstance( args );
-        }
-        catch ( Exception ex ) {
+        } catch ( Exception ex ) {
             throw reflectionException( ex );
         }
     }
@@ -116,10 +114,14 @@ public final class Reflection {
     public static Object invoke( Method method, Object... args ) {
         try {
             return method.invoke( null, args );
-        }
-        catch ( Exception ex ) {
+        } catch ( Exception ex ) {
             throw reflectionException( ex );
         }
+    }
+
+    @SuppressWarnings( "unchecked" )
+    public static <V> V convertWith( ValueConverter<V> converter, String raw ) {
+        return converter == null ? (V) raw : converter.convert( raw );
     }
 
     private static boolean meetsConverterRequirements( Method method, Class<?> expectedReturnType ) {

@@ -25,22 +25,21 @@
 
 package joptsimple;
 
-import static java.util.Collections.*;
+import java.util.List;
 
 /**
- * Thrown when the option parser encounters an unrecognized option.
- *
- * @author <a href="mailto:pholser@alumni.rice.edu">Paul Holser</a>
+ * Thrown when options marked as allowed are specified on the command line, but the options they depend upon are
+ * present/not present.
  */
-class UnrecognizedOptionException extends OptionException {
+class UnavailableOptionException extends OptionException {
     private static final long serialVersionUID = -1L;
 
-    UnrecognizedOptionException( String option ) {
-        super( singletonList( option ) );
+    UnavailableOptionException( List<? extends OptionSpec<?>> forbiddenOptions ) {
+        super( forbiddenOptions );
     }
 
     @Override
     Object[] messageArguments() {
-        return new Object[] { singleOptionString() };
+        return new Object[] { multipleOptionString() };
     }
 }

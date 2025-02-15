@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2004-2011 Paul R. Holser, Jr.
+ Copyright (c) 2004-2021 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -25,22 +25,28 @@
 
 package joptsimple;
 
-import java.util.Collection;
+import java.util.List;
+
+import static java.util.Collections.*;
 
 /**
- * <p>Thrown when an option is marked as required, but not specified on the command line.</p>
+ * Thrown when an option parser refers to an option that is not in fact configured already on the parser.
  *
- * @author <a href="https://github.com/TC1">Emils Solmanis</a>
+ * @author <a href="mailto:pholser@alumni.rice.edu">Paul Holser</a>
  */
-class MissingRequiredOptionException extends OptionException {
+class UnconfiguredOptionException extends OptionException {
     private static final long serialVersionUID = -1L;
 
-    protected MissingRequiredOptionException( Collection<String> options ) {
+    UnconfiguredOptionException( String option ) {
+        this( singletonList( option ) );
+    }
+
+    UnconfiguredOptionException( List<String> options ) {
         super( options );
     }
 
     @Override
-    public String getMessage() {
-        return "Missing required option " + multipleOptionMessage();
+    Object[] messageArguments() {
+        return new Object[] { multipleOptionString() };
     }
 }

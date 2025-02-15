@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2004-2011 Paul R. Holser, Jr.
+ Copyright (c) 2004-2021 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -26,7 +26,7 @@
 package joptsimple.internal;
 
 /**
- * <p>This unchecked exception wraps reflection-oriented exceptions.</p>
+ * This unchecked exception wraps reflection-oriented exceptions.
  *
  * @author <a href="mailto:pholser@alumni.rice.edu">Paul Holser</a>
  */
@@ -34,6 +34,6 @@ public class ReflectionException extends RuntimeException {
     private static final long serialVersionUID = -2L;
 
     ReflectionException( Throwable cause ) {
-        super( cause.toString() );
+        super( cause );
     }
 }

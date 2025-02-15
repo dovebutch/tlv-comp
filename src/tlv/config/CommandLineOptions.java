@@ -170,7 +170,7 @@ class RawCommandLineOptions
 			};
 			
 
-			non_opt_args = options.nonOptionArguments();
+			List<?> non_opt_args = options.nonOptionArguments();
 			
 			if (options.has(filebase_spec))
 			{

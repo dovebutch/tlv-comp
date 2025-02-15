@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2004-2011 Paul R. Holser, Jr.
+ Copyright (c) 2004-2021 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -26,9 +26,13 @@
 package joptsimple;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
+
 import static java.util.Collections.*;
+
+import joptsimple.internal.Reflection;
+import joptsimple.internal.ReflectionException;
 
 import static joptsimple.internal.Strings.*;
 
@@ -36,49 +40,90 @@ import static joptsimple.internal.Strings.*;
  * @param <V> represents the type of the arguments this option accepts
  * @author <a href="mailto:pholser@alumni.rice.edu">Paul Holser</a>
  */
-abstract class AbstractOptionSpec<V> implements OptionSpec<V>, OptionDescriptor {
-    private final List<String> options = new ArrayList<String>();
+public abstract class AbstractOptionSpec<V> implements OptionSpec<V>, OptionDescriptor {
+    private final List<String> options = new ArrayList<>();
     private final String description;
+    private boolean forHelp;
 
-    protected AbstractOptionSpec( String option ) {
+    AbstractOptionSpec( String option ) {
         this( singletonList( option ), EMPTY );
     }
 
-    protected AbstractOptionSpec( Collection<String> options, String description ) {
+    AbstractOptionSpec( List<String> options, String description ) {
         arrangeOptions( options );
 
         this.description = description;
     }
 
-    public final Collection<String> options() {
-        return unmodifiableCollection(options);
+    @Override
+    public final List<String> options() {
+        return unmodifiableList( options );
     }
 
+    @Override
     public final List<V> values( OptionSet detectedOptions ) {
-        return detectedOptions.valuesOf(this);
+        return detectedOptions.valuesOf( this );
     }
 
+    @Override
     public final V value( OptionSet detectedOptions ) {
         return detectedOptions.valueOf( this );
     }
 
+    @Override
+    public final Optional<V> valueOptional( OptionSet detectedOptions ) {
+        return Optional.ofNullable( value( detectedOptions ) );
+    }
+
+    @Override
     public String description() {
         return description;
     }
 
+    public final AbstractOptionSpec<V> forHelp() {
+        forHelp = true;
+        return this;
+    }
+
+    @Override
+    public final boolean isForHelp() {
+        return forHelp;
+    }
+
+    @Override
+    public boolean representsNonOptions() {
+        return false;
+    }
+
     protected abstract V convert( String argument );
+
+    protected V convertWith( ValueConverter<V> converter, String argument ) {
+        try {
+            return Reflection.convertWith( converter, argument );
+        } catch ( ReflectionException | ValueConversionException ex ) {
+            throw new OptionArgumentConversionException( this, argument, ex );
+        }
+    }
+
+    protected String argumentTypeIndicatorFrom( ValueConverter<V> converter ) {
+        if ( converter == null )
+            return null;
+
+        String pattern = converter.valuePattern();
+        return pattern == null ? converter.valueType().getName() : pattern;
+    }
 
     abstract void handleOption( OptionParser parser, ArgumentList arguments, OptionSet detectedOptions,
         String detectedArgument );
 
-    private void arrangeOptions( Collection<String> unarranged ) {
+    private void arrangeOptions( List<String> unarranged ) {
         if ( unarranged.size() == 1 ) {
             options.addAll( unarranged );
             return;
         }
 
-        List<String> shortOptions = new ArrayList<String>();
-        List<String> longOptions = new ArrayList<String>();
+        List<String> shortOptions = new ArrayList<>();
+        List<String> longOptions = new ArrayList<>();
 
         for ( String each : unarranged ) {
             if ( each.length() == 1 )

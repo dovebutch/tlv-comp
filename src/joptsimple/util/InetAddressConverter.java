@@ -23,39 +23,53 @@
  WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-package joptsimple.internal;
+package joptsimple.util;
 
-import java.lang.reflect.Method;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.Locale;
 
+import joptsimple.ValueConversionException;
 import joptsimple.ValueConverter;
-
-import static joptsimple.internal.Reflection.*;
+import joptsimple.internal.Messages;
 
 /**
- * @param <V> constraint on the type of values being converted to
- * @author <a href="mailto:pholser@alumni.rice.edu">Paul Holser</a>
+ * Converts values to {@link java.net.InetAddress} using {@link InetAddress#getByName(String) getByName}.
+ *
+ * @author <a href="mailto:r@ymund.de">Raymund F\u00FCl\u00F6p</a>
  */
-class MethodInvokingValueConverter<V> implements ValueConverter<V> {
-    private final Method method;
-    private final Class<V> clazz;
-
-    MethodInvokingValueConverter( Method method, Class<V> clazz ) {
-        this.method = method;
-        this.clazz = clazz;
+public class InetAddressConverter implements ValueConverter<InetAddress> {
+    @Override
+    public InetAddress convert( String value ) {
+        try {
+            return InetAddress.getByName( value );
+        }
+        catch ( UnknownHostException e ) {
+            throw new ValueConversionException( message( value ) );
+        }
     }
 
     @Override
-    public V convert( String value ) {
-        return clazz.cast( invoke( method, value ) );
+    public String revert( InetAddress value ) {
+        return value.getHostName();
     }
 
     @Override
-    public Class<V> valueType() {
-        return clazz;
+    public Class<InetAddress> valueType() {
+        return InetAddress.class;
     }
 
     @Override
     public String valuePattern() {
         return null;
+    }
+
+    private String message( String value ) {
+        return Messages.message(
+            Locale.getDefault(),
+            "joptsimple.ExceptionMessages",
+            InetAddressConverter.class,
+            "message",
+            value );
     }
 }

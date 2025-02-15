@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2004-2011 Paul R. Holser, Jr.
+ Copyright (c) 2004-2021 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -28,8 +28,8 @@ package joptsimple;
 import static joptsimple.ParserRules.*;
 
 /**
- * <p>Abstraction of parser state; mostly serves to model how a parser behaves depending
- * on whether end-of-options has been detected.</p>
+ * Abstraction of parser state; mostly serves to model how a parser behaves depending on whether end-of-options
+ * has been detected.
  *
  * @author <a href="mailto:pholser@alumni.rice.edu">Paul Holser</a>
  */
@@ -38,7 +38,7 @@ abstract class OptionParserState {
         return new OptionParserState() {
             @Override
             protected void handleArgument( OptionParser parser, ArgumentList arguments, OptionSet detectedOptions ) {
-                detectedOptions.addNonOptionArgument( arguments.next() );
+                parser.handleNonOptionArgument( arguments.next(), arguments, detectedOptions );
             }
         };
     }
@@ -48,18 +48,26 @@ abstract class OptionParserState {
             @Override
             protected void handleArgument( OptionParser parser, ArgumentList arguments, OptionSet detectedOptions ) {
                 String candidate = arguments.next();
-                if ( isOptionTerminator( candidate ) )
-                    parser.noMoreOptions();
-                else if ( isLongOptionToken( candidate ) )
-                    parser.handleLongOptionToken( candidate, arguments, detectedOptions );
-                else if ( isShortOptionToken( candidate ) )
-                    parser.handleShortOptionToken( candidate, arguments, detectedOptions );
-                else {
-                    if ( posixlyCorrect )
+                try {
+                    if ( isOptionTerminator( candidate ) ) {
                         parser.noMoreOptions();
-
-                    detectedOptions.addNonOptionArgument( candidate );
+                        return;
+                    } else if ( isLongOptionToken( candidate ) ) {
+                        parser.handleLongOptionToken( candidate, arguments, detectedOptions );
+                        return;
+                    } else if ( isShortOptionToken( candidate ) ) {
+                        parser.handleShortOptionToken( candidate, arguments, detectedOptions );
+                        return;
+                    }
+                } catch ( UnrecognizedOptionException e ) {
+                    if ( !parser.doesAllowsUnrecognizedOptions() )
+                        throw e;
                 }
+
+                if ( posixlyCorrect )
+                    parser.noMoreOptions();
+
+                parser.handleNonOptionArgument( candidate, arguments, detectedOptions );
             }
         };
     }

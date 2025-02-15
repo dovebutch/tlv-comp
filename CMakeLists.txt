@@ -43,10 +43,11 @@
 #
 ##################################################################
 
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.20)
 enable_testing()
 #set(CMAKE_VERBOSE_MAKEFILE 1)
-find_package(Java 1.7)
+set(CMAKE_JAVA_COMPILE_FLAGS "-Xlint:unchecked" "-Xlint:deprecation")
+find_package(Java 11)
 include(UseJava)
 project(svgen Java)
 set(SVGEN_ROOT ${svgen_BINARY_DIR})

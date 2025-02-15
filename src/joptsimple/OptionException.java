@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2004-2011 Paul R. Holser, Jr.
+ Copyright (c) 2004-2021 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -28,10 +28,15 @@ package joptsimple;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
-import static java.util.Collections.*;
+import java.util.Locale;
+import java.util.Set;
 
-import static joptsimple.internal.Strings.*;
+import static java.util.Collections.*;
+import static java.util.stream.Collectors.*;
+
+import static joptsimple.internal.Messages.*;
 
 /**
  * Thrown when a problem occurs during option parsing.
@@ -41,16 +46,30 @@ import static joptsimple.internal.Strings.*;
 public abstract class OptionException extends RuntimeException {
     private static final long serialVersionUID = -1L;
 
-    private final List<String> options = new ArrayList<String>();
+    private final List<String> options = new ArrayList<>();
 
-    protected OptionException( Collection<String> options ) {
+    protected OptionException( List<String> options ) {
         this.options.addAll( options );
     }
 
-    protected OptionException( Collection<String> options, Throwable cause ) {
-        super( cause );
+    protected OptionException( Collection<? extends OptionSpec<?>> options ) {
+        this.options.addAll( specsToStrings( options ) );
+    }
 
-        this.options.addAll( options );
+    protected OptionException( Collection<? extends OptionSpec<?>> options, Throwable cause ) {
+        super( cause );
+        this.options.addAll( specsToStrings( options ) );
+    }
+
+    private List<String> specsToStrings( Collection<? extends OptionSpec<?>> options ) {
+        List<String> strings = new ArrayList<>();
+        for ( OptionSpec<?> each : options )
+            strings.add( specToString( each ) );
+        return strings;
+    }
+
+    private String specToString( OptionSpec<?> option ) {
+        return option.options().stream().collect( joining( "/" ) );
     }
 
     /**
@@ -58,23 +77,24 @@ public abstract class OptionException extends RuntimeException {
      *
      * @return the option being considered when the exception was created
      */
-    public Collection<String> options() {
-        return unmodifiableCollection( options );
+    public List<String> options() {
+        return unmodifiableList( options );
     }
 
-    protected final String singleOptionMessage() {
-        return singleOptionMessage( options.get( 0 ) );
+    protected final String singleOptionString() {
+        return singleOptionString( options.get( 0 ) );
     }
 
-    protected final String singleOptionMessage( String option ) {
-        return SINGLE_QUOTE + option + SINGLE_QUOTE;
+    protected final String singleOptionString( String option ) {
+        return option;
     }
 
-    protected final String multipleOptionMessage() {
+    protected final String multipleOptionString() {
         StringBuilder buffer = new StringBuilder( "[" );
 
-        for ( Iterator<String> iter = options.iterator(); iter.hasNext(); ) {
-            buffer.append( singleOptionMessage( iter.next() ) );
+        Set<String> asSet = new LinkedHashSet<String>( options );
+        for ( Iterator<String> iter = asSet.iterator(); iter.hasNext(); ) {
+            buffer.append( singleOptionString(iter.next()) );
             if ( iter.hasNext() )
                 buffer.append( ", " );
         }
@@ -87,4 +107,24 @@ public abstract class OptionException extends RuntimeException {
     static OptionException unrecognizedOption( String option ) {
         return new UnrecognizedOptionException( option );
     }
+
+    @Override
+    public final String getMessage() {
+        return localizedMessage( Locale.ENGLISH );
+    }
+
+    @Override
+    public final String getLocalizedMessage() {
+        return localizedMessage( Locale.getDefault() );
+    }
+
+    final String localizedMessage( Locale locale ) {
+        return formattedMessage( locale );
+    }
+
+    private String formattedMessage( Locale locale ) {
+        return message( locale, "joptsimple.ExceptionMessages", getClass(), "message", messageArguments() );
+    }
+
+    abstract Object[] messageArguments();
 }

@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2004-2011 Paul R. Holser, Jr.
+ Copyright (c) 2004-2021 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -25,10 +25,10 @@
 
 package joptsimple;
 
-import java.util.Collection;
+import java.util.List;
 
 /**
- * <p>Specification of an option that accepts an optional argument.</p>
+ * Specification of an option that accepts an optional argument.
  *
  * @param <V> represents the type of the arguments this option accepts
  * @author <a href="mailto:pholser@alumni.rice.edu">Paul Holser</a>
@@ -38,7 +38,7 @@ class OptionalArgumentOptionSpec<V> extends ArgumentAcceptingOptionSpec<V> {
         super( option, false );
     }
 
-    OptionalArgumentOptionSpec( Collection<String> options, String description ) {
+    OptionalArgumentOptionSpec( List<String> options, String description ) {
         super( options, false, description );
     }
 
@@ -47,7 +47,7 @@ class OptionalArgumentOptionSpec<V> extends ArgumentAcceptingOptionSpec<V> {
         if ( arguments.hasMore() ) {
             String nextArgument = arguments.peek();
 
-            if ( !parser.looksLikeAnOption( nextArgument ) )
+            if ( !parser.looksLikeAnOption( nextArgument ) && canConvertArgument( nextArgument ) )
                 handleOptionArgument( parser, detectedOptions, arguments );
             else if ( isArgumentOfNumberType() && canConvertArgument( nextArgument ) )
                 addArguments( detectedOptions, arguments.next() );

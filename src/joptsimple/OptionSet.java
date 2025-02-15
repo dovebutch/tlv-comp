@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2004-2011 Paul R. Holser, Jr.
+ Copyright (c) 2004-2021 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -30,10 +30,10 @@ import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static java.util.Collections.*;
-
-import static joptsimple.internal.Objects.*;
+import static java.util.Objects.*;
 
 /**
  * Representation of a group of detected command line options, their arguments, and non-option arguments.
@@ -44,29 +44,29 @@ public class OptionSet {
     private final List<OptionSpec<?>> detectedSpecs;
     private final Map<String, AbstractOptionSpec<?>> detectedOptions;
     private final Map<AbstractOptionSpec<?>, List<String>> optionsToArguments;
-    private final List<String> nonOptionArguments;
+    private final Map<String, AbstractOptionSpec<?>> recognizedSpecs;
     private final Map<String, List<?>> defaultValues;
 
     /*
      * Package-private because clients don't create these.
      */
-    OptionSet( Map<String, List<?>> defaults ) {
-        detectedSpecs = new ArrayList<OptionSpec<?>>();
-        detectedOptions = new HashMap<String, AbstractOptionSpec<?>>();
-        optionsToArguments = new IdentityHashMap<AbstractOptionSpec<?>, List<String>>();
-        nonOptionArguments = new ArrayList<String>();
-        defaultValues = new HashMap<String, List<?>>( defaults );
+    OptionSet( Map<String, AbstractOptionSpec<?>> recognizedSpecs ) {
+        detectedSpecs = new ArrayList<>();
+        detectedOptions = new HashMap<>();
+        optionsToArguments = new IdentityHashMap<>();
+        defaultValues = defaultValues( recognizedSpecs );
+        this.recognizedSpecs = recognizedSpecs;
     }
 
     /**
      * Tells whether any options were detected.
-     * 
+     *
      * @return {@code true} if any options were detected
      */
     public boolean hasOptions() {
-        return !detectedOptions.isEmpty();
+        return !( detectedOptions.size() == 1 && detectedOptions.values().iterator().next().representsNonOptions() );
     }
-    
+
     /**
      * Tells whether the given option was detected.
      *
@@ -122,7 +122,7 @@ public class OptionSet {
      * @see #hasArgument(String)
      */
     public boolean hasArgument( OptionSpec<?> option ) {
-        ensureNotNull( option );
+        requireNonNull( option );
 
         List<String> values = optionsToArguments.get( option );
         return values != null && !values.isEmpty();
@@ -143,7 +143,7 @@ public class OptionSet {
      * @throws OptionException if more than one argument was detected for the option
      */
     public Object valueOf( String option ) {
-        ensureNotNull( option );
+        requireNonNull( option );
 
         AbstractOptionSpec<?> spec = detectedOptions.get( option );
         if ( spec == null ) {
@@ -152,6 +152,24 @@ public class OptionSet {
         }
 
         return valueOf( spec );
+    }
+
+    /**
+     * Gives the argument associated with the given option, as an {@link Optional}.
+     * If the option was given an argument type, the argument will take on that type;
+     * otherwise, it will be a {@link String}.
+     *
+     * <p>Specifying a {@linkplain ArgumentAcceptingOptionSpec#defaultsTo(Object, Object[]) default argument value}
+     * for an option will cause this method to return that default value even if the option was not detected on the
+     * command line, or if the option can take an optional argument but did not have one on the command line.</p>
+     *
+     * @param option the option to search for
+     * @return the argument of the given option as an {@code Optional}
+     * @throws NullPointerException if {@code option} is {@code null}
+     * @throws OptionException if more than one argument was detected for the option
+     */
+    public Optional<Object> valueOfOptional( String option ) {
+        return Optional.ofNullable( valueOf( option ) );
     }
 
     /**
@@ -168,7 +186,7 @@ public class OptionSet {
      * @throws ClassCastException if the arguments of this option are not of the expected type
      */
     public <V> V valueOf( OptionSpec<V> option ) {
-        ensureNotNull( option );
+        requireNonNull( option );
 
         List<V> values = valuesOf( option );
         switch ( values.size() ) {
@@ -177,8 +195,24 @@ public class OptionSet {
             case 1:
                 return values.get( 0 );
             default:
-                throw new MultipleArgumentsForOptionException( option.options() );
+                throw new MultipleArgumentsForOptionException( option );
         }
+    }
+
+    /**
+     * Gives the argument associated with the given option as an {@link Optional}.
+     *
+     * <p>This method recognizes only instances of options returned from the fluent interface methods.</p>
+     *
+     * @param <V> represents the type of the arguments the given option accepts
+     * @param option the option to search for
+     * @return the argument of the given option as an {@code Optional}
+     * @throws OptionException if more than one argument was detected for the option
+     * @throws NullPointerException if {@code option} is {@code null}
+     * @throws ClassCastException if the arguments of this option are not of the expected type
+     */
+    public <V> Optional<V> valueOfOptional( OptionSpec<V> option ) {
+        return Optional.ofNullable( valueOf( option ) );
     }
 
     /**
@@ -191,7 +225,7 @@ public class OptionSet {
      * @throws NullPointerException if {@code option} is {@code null}
      */
     public List<?> valuesOf( String option ) {
-        ensureNotNull( option );
+        requireNonNull( option );
 
         AbstractOptionSpec<?> spec = detectedOptions.get( option );
         return spec == null ? defaultValuesFor( option ) : valuesOf( spec );
@@ -212,14 +246,14 @@ public class OptionSet {
      * example, if the type does not implement a correct conversion constructor or method
      */
     public <V> List<V> valuesOf( OptionSpec<V> option ) {
-        ensureNotNull( option );
+        requireNonNull( option );
 
         List<String> values = optionsToArguments.get( option );
         if ( values == null || values.isEmpty() )
             return defaultValueFor( option );
 
         AbstractOptionSpec<V> spec = (AbstractOptionSpec<V>) option;
-        List<V> convertedValues = new ArrayList<V>();
+        List<V> convertedValues = new ArrayList<>();
         for ( String each : values )
             convertedValues.add( spec.convert( each ) );
 
@@ -227,22 +261,57 @@ public class OptionSet {
     }
 
     /**
-     * Gives the set of options that were detected, in the form of {@linkplain OptionSpec}s, in the order in which the
-     * options were found on the command line.
+     * Gives the set of options that were detected, in the form of
+     * {@linkplain OptionSpec}s, in the order in which the options were found
+     * on the command line.
      *
      * @return the set of detected command line options
      */
     public List<OptionSpec<?>> specs() {
-        return unmodifiableList( detectedSpecs );
+        List<OptionSpec<?>> specs = new ArrayList<>( detectedSpecs );
+        specs.removeAll( singletonList( detectedOptions.get( NonOptionArgumentSpec.NAME ) ) );
+
+        return unmodifiableList( specs );
+    }
+
+    /**
+     * Gives the set of options and non-option arguments that were detected,
+     * in the form of {@linkplain OptionSpec}s, in the order in which they
+     * were found on the command line.
+     *
+     * @return the set of detected command line options and non-option args
+     */
+    public List<OptionSpec<?>> specsWithNonOptions() {
+        List<OptionSpec<?>> specs = new ArrayList<>( detectedSpecs );
+        specs.remove( detectedOptions.get( NonOptionArgumentSpec.NAME ) );
+
+        return unmodifiableList( specs );
+    }
+
+    /**
+     * Gives all declared options as a map of string to {@linkplain OptionSpec}.
+     *
+     * @return the declared options as a map
+     */
+    public Map<OptionSpec<?>, List<?>> asMap() {
+        Map<OptionSpec<?>, List<?>> map = new HashMap<>();
+
+        for ( AbstractOptionSpec<?> spec : recognizedSpecs.values() ) {
+            if ( !spec.representsNonOptions() )
+                map.put( spec, valuesOf( spec ) );
+        }
+
+        return unmodifiableMap( map );
     }
 
     /**
      * @return the detected non-option arguments
      */
-    public List<String> nonOptionArguments() {
-        return unmodifiableList( nonOptionArguments );
+    public List<?> nonOptionArguments() {
+        AbstractOptionSpec<?> spec = detectedOptions.get( NonOptionArgumentSpec.NAME );
+        return valuesOf( spec );
     }
-    
+
     void add( AbstractOptionSpec<?> spec ) {
         addWithArgument( spec, null );
     }
@@ -256,16 +325,12 @@ public class OptionSet {
         List<String> optionArguments = optionsToArguments.get( spec );
 
         if ( optionArguments == null ) {
-            optionArguments = new ArrayList<String>();
+            optionArguments = new ArrayList<>();
             optionsToArguments.put( spec, optionArguments );
         }
 
         if ( argument != null )
             optionArguments.add( argument );
-    }
-
-    void addNonOptionArgument( String argument ) {
-        nonOptionArguments.add( argument );
     }
 
     @Override
@@ -277,32 +342,34 @@ public class OptionSet {
             return false;
 
         OptionSet other = (OptionSet) that;
-        Map<AbstractOptionSpec<?>, List<String>> thisOptionsToArguments =
-            new HashMap<AbstractOptionSpec<?>, List<String>>( optionsToArguments );
-        Map<AbstractOptionSpec<?>, List<String>> otherOptionsToArguments =
-            new HashMap<AbstractOptionSpec<?>, List<String>>( other.optionsToArguments );
+        Map<AbstractOptionSpec<?>, List<String>> thisOptionsToArguments = new HashMap<>( optionsToArguments );
+        Map<AbstractOptionSpec<?>, List<String>> otherOptionsToArguments = new HashMap<>( other.optionsToArguments );
         return detectedOptions.equals( other.detectedOptions )
-            && thisOptionsToArguments.equals( otherOptionsToArguments )
-            && nonOptionArguments.equals( other.nonOptionArguments() );
+            && thisOptionsToArguments.equals( otherOptionsToArguments );
     }
 
     @Override
     public int hashCode() {
-        Map<AbstractOptionSpec<?>, List<String>> thisOptionsToArguments =
-            new HashMap<AbstractOptionSpec<?>, List<String>>( optionsToArguments );
-        return detectedOptions.hashCode()
-            ^ thisOptionsToArguments.hashCode()
-            ^ nonOptionArguments.hashCode();
+        Map<AbstractOptionSpec<?>, List<String>> thisOptionsToArguments = new HashMap<>( optionsToArguments );
+        return detectedOptions.hashCode() ^ thisOptionsToArguments.hashCode();
     }
 
+    @SuppressWarnings( "unchecked" )
     private <V> List<V> defaultValuesFor( String option ) {
         if ( defaultValues.containsKey( option ) )
-            return (List<V>) defaultValues.get( option );
+            return unmodifiableList( (List<V>) defaultValues.get( option ) );
 
         return emptyList();
     }
 
     private <V> List<V> defaultValueFor( OptionSpec<V> option ) {
         return defaultValuesFor( option.options().iterator().next() );
+    }
+
+    private static Map<String, List<?>> defaultValues( Map<String, AbstractOptionSpec<?>> recognizedSpecs ) {
+        Map<String, List<?>> defaults = new HashMap<>();
+        for ( Map.Entry<String, AbstractOptionSpec<?>> each : recognizedSpecs.entrySet() )
+            defaults.put( each.getKey(), each.getValue().defaultValues() );
+        return defaults;
     }
 }

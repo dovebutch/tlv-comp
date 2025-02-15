@@ -23,24 +23,25 @@
  WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-package joptsimple;
+package joptsimple.internal;
 
-import static java.util.Collections.*;
+import java.util.Map;
 
 /**
- * Thrown when the option parser encounters an unrecognized option.
+ * Map-like interface for storing String-value pairs.
  *
- * @author <a href="mailto:pholser@alumni.rice.edu">Paul Holser</a>
+ * @param <V> type of values stored in the map
  */
-class UnrecognizedOptionException extends OptionException {
-    private static final long serialVersionUID = -1L;
+public interface OptionNameMap<V> {
+    boolean contains( String key );
 
-    UnrecognizedOptionException( String option ) {
-        super( singletonList( option ) );
-    }
+    V get( String key );
 
-    @Override
-    Object[] messageArguments() {
-        return new Object[] { singleOptionString() };
-    }
+    void put( String key, V newValue );
+
+    void putAll( Iterable<String> keys, V newValue );
+
+    void remove( String key );
+
+    Map<String, V> toJavaUtilMap();
 }
