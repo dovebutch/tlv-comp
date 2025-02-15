@@ -43,7 +43,7 @@
 #
 ##################################################################
 
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.20)
 enable_testing()
 #set(CMAKE_VERBOSE_MAKEFILE 1)
 set(CMAKE_JAVA_COMPILE_FLAGS "-Xlint:unchecked" "-Xlint:deprecation")
